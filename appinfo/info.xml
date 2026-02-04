@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
+    <id>mail_roundcube_bridge</id>
+    <name>RoundCube Bridge</name>
+    <summary>Nextcloud integration bridge for RoundCube</summary>
+    <description><![CDATA[
+Provides a communication bridge between RoundCube (embedded via mail_roundcube app) and Nextcloud services.
+
+**Features:**
+- Attach files from Nextcloud to emails
+- Save email attachments to Nextcloud
+- Insert public share links into emails
+- Add calendar invitations (.ics) to Nextcloud Calendar
+
+**Requirements:**
+- mail_roundcube app must be installed
+- NextBridge plugin must be installed in RoundCube
+
+See [NextBridge](https://github.com/Gecka-Apps/NextBridge) for the RoundCube plugin.
+    ]]></description>
+    <version>1.0.0</version>
+    <licence>agpl</licence>
+    <author mail="laurent@gecka.nc">Laurent Dinclaux</author>
+    <namespace>MailRoundcubeBridge</namespace>
+    <category>integration</category>
+    <category>office</category>
+    <website>https://github.com/Gecka-Apps/nextcloud-roundcube-bridge</website>
+    <bugs>https://github.com/Gecka-Apps/nextcloud-roundcube-bridge/issues</bugs>
+    <repository type="git">https://github.com/Gecka-Apps/nextcloud-roundcube-bridge.git</repository>
+    <screenshot>https://raw.githubusercontent.com/Gecka-Apps/nextcloud-roundcube-bridge/main/screenshots/screenshot.png</screenshot>
+    <dependencies>
+        <nextcloud min-version="32" max-version="32"/>
+        <php min-version="8.2"/>
+    </dependencies>
+    <settings>
+        <admin>OCA\MailRoundcubeBridge\Settings\Admin</admin>
+    </settings>
+</info>

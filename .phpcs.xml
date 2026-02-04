@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<ruleset name="NextcloudApp">
+  <description>Nextcloud App Coding Standard (PSR-12 based)</description>
+
+  <!-- Use PSR-12 as base -->
+  <rule ref="PSR12">
+    <!-- Allow longer lines for readability -->
+    <exclude name="Generic.Files.LineLength"/>
+  </rule>
+
+  <!-- Line length: warn at 120, no hard limit -->
+  <rule ref="Generic.Files.LineLength">
+    <properties>
+      <property name="lineLimit" value="120"/>
+      <property name="absoluteLineLimit" value="0"/>
+    </properties>
+  </rule>
+
+  <!-- Require class documentation -->
+  <rule ref="Squiz.Commenting.ClassComment"/>
+
+  <!-- Require function documentation with @param and @return -->
+  <rule ref="Squiz.Commenting.FunctionComment"/>
+
+  <!-- Files to check -->
+  <file>lib/</file>
+  <file>appinfo/</file>
+  <file>templates/</file>
+
+  <!-- Exclude vendor directories -->
+  <exclude-pattern>*/vendor/*</exclude-pattern>
+  <exclude-pattern>*/node_modules/*</exclude-pattern>
+</ruleset>

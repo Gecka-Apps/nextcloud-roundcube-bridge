@@ -1,0 +1,25 @@
+# Build artifacts
+build/
+js/
+*.html
+stats.json
+
+# Dependencies
+node_modules/
+vendor/
+
+# Generated files
+composer.json
+composer.lock
+package-lock.json
+stamp.*
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
