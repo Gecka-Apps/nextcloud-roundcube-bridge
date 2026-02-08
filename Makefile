@@ -103,6 +103,12 @@ WEBPACK_DEPS =\
  $(JS_FILES)
 
 #@private
+package-lock.json:
+	$(NPM) install
+	touch package-lock.json
+	touch node_modules
+
+#@private
 node_modules:
 	$(NPM) install
 	touch package-lock.json
@@ -193,7 +199,7 @@ fi
 	tar -c$(APPSTORE_COMPRESSION)f $(APPSTORE_PACKAGE_FILE) -C $(APPSTORE_SIGN_DIR) $(APP_NAME)
 	$(SILENT)if [ -f $(BUILD_CERT_DIR)/$(APP_NAME).key ] && [ -f $(BUILD_CERT_DIR)/$(APP_NAME).crt ]; then\
   echo "Signing package ...";\
-  $(OPENSSL) dgst -sha512 -sign $(CERT_DIR)/$(APP_NAME).key $(APPSTORE_PACKAGE_FILE) | openssl base64; \
+  $(OPENSSL) dgst -sha512 -sign $(BUILD_CERT_DIR)/$(APP_NAME).key $(APPSTORE_PACKAGE_FILE) | openssl base64; \
 else\
   echo 'Cannot sign app-store package, certificate "$(BUILD_CERT_DIR)/$(APP_NAME).crt" or private key "$(BUILD_CERT_DIR)/$(APP_NAME).key" not available.' 1>&2;\
 fi
