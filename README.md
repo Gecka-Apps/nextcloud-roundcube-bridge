@@ -71,9 +71,9 @@ NextcloudBridge.base64ToBlob(base64, mimeType)
 
 ## Installation
 
-### From App Store (soon)
+### From App Store
 
-1. Go to Nextcloud Apps
+1. Go to Nextcloud Apps or visit the [App Store page](https://apps.nextcloud.com/apps/mail_roundcube_bridge)
 2. Search for "RoundCube Bridge"
 3. Click Install
 
