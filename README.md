@@ -2,7 +2,7 @@
 
 [![GitHub release](https://img.shields.io/github/v/release/Gecka-Apps/nextcloud-roundcube-bridge)](https://github.com/Gecka-Apps/nextcloud-roundcube-bridge/releases)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
-[![Nextcloud](https://img.shields.io/badge/Nextcloud-32+-0082c9?logo=nextcloud&logoColor=white)](https://nextcloud.com)
+[![Nextcloud](https://img.shields.io/badge/Nextcloud-32--33-0082c9?logo=nextcloud&logoColor=white)](https://nextcloud.com)
 [![PHP](https://img.shields.io/badge/PHP-8.2+-777BB4?logo=php&logoColor=white)](https://php.net)
 
 A Nextcloud app that provides a communication bridge between RoundCube (embedded via the `mail_roundcube` app) and Nextcloud services.
@@ -16,7 +16,7 @@ A Nextcloud app that provides a communication bridge between RoundCube (embedded
 
 ## Requirements
 
-- Nextcloud 32+
+- Nextcloud 32–33
 - PHP 8.2+
 - [mail_roundcube](https://github.com/rotdrop/nextcloud-roundcube) app installed and configured
 - [NextBridge](https://github.com/Gecka-Apps/NextBridge) plugin installed in RoundCube
