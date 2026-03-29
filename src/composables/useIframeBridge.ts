@@ -11,8 +11,8 @@
  * @license AGPL-3.0-or-later
  */
 
-import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { generateRemoteUrl, generateOcsUrl, generateUrl } from '@nextcloud/router'
+import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { generateRemoteUrl, generateUrl } from '@nextcloud/router'
 import { getCurrentUser, getRequestToken } from '@nextcloud/auth'
 import axios from '@nextcloud/axios'
 import type { Node } from '@nextcloud/files'
@@ -89,6 +89,10 @@ export interface ShareLinkCreatedResponse {
   success: boolean
   url?: string
   filename?: string
+  password?: string
+  expireDate?: string
+  label?: string
+  note?: string
   error?: string
 }
 
@@ -178,6 +182,16 @@ export function useIframeBridge(
   const pendingSaveRequest = ref<PendingSaveRequest | null>(null)
   const pendingSaveFilesRequest = ref<PendingSaveFilesRequest | null>(null)
   const pendingShareLinkRequest = ref<PendingShareLinkRequest | null>(null)
+
+  // Share options form state
+  const isShareOptionsOpen = ref(false)
+  const pendingShareWithOptionsRequest = ref<{
+    requestId: string
+    path: string
+    filename: string
+  } | null>(null)
+  const shareServerError = ref('')
+  const shareServerErrorDetail = ref('')
 
   /**
    * Get the WebDAV base URL for the current user.
@@ -693,22 +707,6 @@ export function useIframeBridge(
   }
 
   /**
-   * Create a public share link for a file using OCS Sharing API.
-   * @param path - File path from user's root (e.g., /Documents/file.pdf)
-   * @returns The share URL
-   */
-  const createShareLink = async (path: string): Promise<string> => {
-    const url = generateOcsUrl('apps/files_sharing/api/v1/shares')
-
-    const response = await axios.post(url, {
-      shareType: 3, // SHARE_TYPE_LINK
-      path,
-    })
-
-    return response.data.ocs.data.url
-  }
-
-  /**
    * Handle create share link request from iframe - opens file picker.
    */
   const handleCreateShareLink = (message: CreateShareLinkMessage): void => {
@@ -722,6 +720,7 @@ export function useIframeBridge(
 
   /**
    * Callback when a file is picked for share link creation.
+   * Opens the share options form instead of creating the share immediately.
    */
   const onShareLinkFilePicked = async (nodes: Node[]): Promise<void> => {
     const request = pendingShareLinkRequest.value
@@ -730,11 +729,9 @@ export function useIframeBridge(
       return
     }
 
-    // Clear pending request immediately
-    pendingShareLinkRequest.value = null
-
     const node = nodes[0]
     if (!node?.path) {
+      pendingShareLinkRequest.value = null
       sendToIframe({
         action: 'shareLinkCreated',
         requestId: request.requestId,
@@ -746,42 +743,110 @@ export function useIframeBridge(
       return
     }
 
-    try {
-      const url = await createShareLink(node.path)
-      const filename = node.basename || node.path.split('/').pop() || 'file'
+    const filename = node.basename || node.path.split('/').pop() || 'file'
 
-      sendToIframe({
+    // Store file info, close picker, then open share options form on next tick
+    // to avoid DOM conflicts between FilePicker unmount and ShareOptionsForm mount
+    pendingShareWithOptionsRequest.value = {
+      requestId: request.requestId,
+      path: node.path,
+      filename,
+    }
+    pendingShareLinkRequest.value = null
+    isShareLinkPickerOpen.value = false
+    shareServerError.value = ''
+    shareServerErrorDetail.value = ''
+    await nextTick()
+    isShareOptionsOpen.value = true
+  }
+
+  /**
+   * Callback when the share link file picker is closed.
+   * Uses setTimeout to let the button callback run first when a file is selected,
+   * since the FilePicker emits 'close' before calling the button callback.
+   */
+  const onShareLinkPickerClose = (): void => {
+    isShareLinkPickerOpen.value = false
+    setTimeout(() => {
+      const request = pendingShareLinkRequest.value
+      if (request) {
+        sendToIframe({
+          action: 'shareLinkCreated',
+          requestId: request.requestId,
+          success: false,
+          error: 'Cancelled',
+        })
+        pendingShareLinkRequest.value = null
+        isProcessing.value = false
+      }
+    }, 0)
+  }
+
+  /**
+   * Callback when share options form is submitted.
+   * Creates the share link via the bridge API with all options.
+   */
+  const onShareOptionsSubmit = async (options: {
+    path: string
+    password: string
+    expireDate: string
+    label: string
+    note: string
+    hideDownload: boolean
+    permissions: number
+    sendPasswordByTalk: boolean
+  }): Promise<void> => {
+    const request = pendingShareWithOptionsRequest.value
+    if (!request) {
+      logger.error('No pending share request for options submit')
+      return
+    }
+
+    try {
+      const payload: Record<string, unknown> = { path: options.path }
+      if (options.password) payload.password = options.password
+      if (options.expireDate) payload.expireDate = options.expireDate
+      if (options.label) payload.label = options.label
+      if (options.note) payload.note = options.note
+      if (options.hideDownload) payload.hideDownload = true
+      if (options.permissions && options.permissions !== 1) payload.permissions = options.permissions
+      if (options.sendPasswordByTalk) payload.sendPasswordByTalk = true
+
+      const response = await axios.post(
+        generateUrl('/apps/mail_roundcube_bridge/api/share'),
+        payload,
+      )
+
+      const responseData = response.data
+      const shareResponse: ShareLinkCreatedResponse = {
         action: 'shareLinkCreated',
         requestId: request.requestId,
         success: true,
-        url,
-        filename,
-      })
+        url: responseData.url,
+        filename: request.filename,
+      }
+      if (responseData.password) shareResponse.password = responseData.password
+      if (responseData.expireDate) shareResponse.expireDate = responseData.expireDate
+      if (responseData.label) shareResponse.label = responseData.label
+      if (responseData.note) shareResponse.note = responseData.note
+      sendToIframe(shareResponse)
+
+      pendingShareWithOptionsRequest.value = null
+      isShareOptionsOpen.value = false
+      isProcessing.value = false
     } catch (error: unknown) {
       logger.error('Failed to create share link', { error })
-      let errorMessage = 'Failed to create share link'
-      // Try to extract error message from OCS response
-      const axiosError = error as { response?: { data?: { ocs?: { meta?: { message?: string } } } } }
-      if (axiosError.response?.data?.ocs?.meta?.message) {
-        errorMessage = axiosError.response.data.ocs.meta.message
-      }
-      sendToIframe({
-        action: 'shareLinkCreated',
-        requestId: request.requestId,
-        success: false,
-        error: errorMessage,
-      })
-    } finally {
-      isProcessing.value = false
-      isShareLinkPickerOpen.value = false
+      const axiosError = error as { response?: { data?: { error?: string; detail?: string } } }
+      shareServerError.value = axiosError.response?.data?.error || 'Failed to create share link'
+      shareServerErrorDetail.value = axiosError.response?.data?.detail || ''
     }
   }
 
   /**
-   * Callback when the share link file picker is closed without selection.
+   * Callback when share options form is cancelled.
    */
-  const onShareLinkPickerClose = (): void => {
-    const request = pendingShareLinkRequest.value
+  const onShareOptionsCancel = (): void => {
+    const request = pendingShareWithOptionsRequest.value
     if (request) {
       sendToIframe({
         action: 'shareLinkCreated',
@@ -789,10 +854,10 @@ export function useIframeBridge(
         success: false,
         error: 'Cancelled',
       })
-      pendingShareLinkRequest.value = null
+      pendingShareWithOptionsRequest.value = null
     }
+    isShareOptionsOpen.value = false
     isProcessing.value = false
-    isShareLinkPickerOpen.value = false
   }
 
   /**
@@ -910,8 +975,12 @@ export function useIframeBridge(
     isFilePickerOpen,
     isFileSaverOpen,
     isShareLinkPickerOpen,
+    isShareOptionsOpen,
     pendingPickRequest,
     pendingSaveRequest,
+    pendingShareWithOptionsRequest,
+    shareServerError,
+    shareServerErrorDetail,
     // Callbacks for FilePicker component
     onFilesPicked,
     onFilePickerClose,
@@ -920,5 +989,8 @@ export function useIframeBridge(
     // Callbacks for Share Link FilePicker
     onShareLinkFilePicked,
     onShareLinkPickerClose,
+    // Callbacks for Share Options Form
+    onShareOptionsSubmit,
+    onShareOptionsCancel,
   }
 }

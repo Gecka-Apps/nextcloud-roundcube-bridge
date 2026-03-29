@@ -33,12 +33,23 @@
       :multiselect="false"
       @close="onShareLinkPickerClose"
     />
+    <!-- Share options form (shown after file selection) -->
+    <ShareOptionsForm
+      v-if="isShareOptionsOpen && pendingShareWithOptionsRequest"
+      :file-path="pendingShareWithOptionsRequest.path"
+      :file-name="pendingShareWithOptionsRequest.filename"
+      :server-error="shareServerError"
+      :server-error-detail="shareServerErrorDetail"
+      @submit="onShareOptionsSubmit"
+      @cancel="onShareOptionsCancel"
+    />
   </div>
 </template>
 
 <script>
 import { translate as t } from '@nextcloud/l10n'
 import { FilePickerVue as FilePicker } from '@nextcloud/dialogs/filepicker.js'
+import ShareOptionsForm from './components/ShareOptionsForm.vue'
 import { useIframeBridge } from './composables/useIframeBridge'
 import { ref, onMounted, defineComponent } from 'vue'
 
@@ -46,6 +57,7 @@ export default defineComponent({
   name: 'BridgeContainer',
   components: {
     FilePicker,
+    ShareOptionsForm,
   },
   setup() {
     // Reference to the RoundCube iframe
@@ -106,12 +118,18 @@ export default defineComponent({
       isFilePickerOpen,
       isFileSaverOpen,
       isShareLinkPickerOpen,
+      isShareOptionsOpen,
+      pendingShareWithOptionsRequest,
+      shareServerError,
+      shareServerErrorDetail,
       onFilesPicked,
       onFilePickerClose,
       onFolderSelected,
       onFileSaverClose,
       onShareLinkFilePicked,
       onShareLinkPickerClose,
+      onShareOptionsSubmit,
+      onShareOptionsCancel,
     } = useIframeBridge(iframeRef, { enabled: true })
 
     // Button configs
@@ -144,9 +162,15 @@ export default defineComponent({
       isFilePickerOpen,
       isFileSaverOpen,
       isShareLinkPickerOpen,
+      isShareOptionsOpen,
+      pendingShareWithOptionsRequest,
+      shareServerError,
+      shareServerErrorDetail,
       onFilePickerClose,
       onFileSaverClose,
       onShareLinkPickerClose,
+      onShareOptionsSubmit,
+      onShareOptionsCancel,
       filePickerButtons,
       fileSaverButtons,
       shareLinkPickerButtons,

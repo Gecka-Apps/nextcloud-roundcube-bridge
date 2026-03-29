@@ -20,5 +20,15 @@ return [
             'url' => '/api/calendar/event',
             'verb' => 'POST',
         ],
+        [
+            'name' => 'share#create',
+            'url' => '/api/share',
+            'verb' => 'POST',
+        ],
+        [
+            'name' => 'share_config#get',
+            'url' => '/api/share-config',
+            'verb' => 'GET',
+        ],
     ],
 ];
