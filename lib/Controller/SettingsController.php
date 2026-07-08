@@ -13,7 +13,7 @@ namespace OCA\MailRoundcubeBridge\Controller;
 use OCA\MailRoundcubeBridge\AppInfo\Application;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IConfig;
+use OCP\IAppConfig;
 use OCP\IRequest;
 
 /**
@@ -24,9 +24,9 @@ class SettingsController extends Controller
     /**
      * Nextcloud configuration service.
      *
-     * @var IConfig
+     * @var IAppConfig
      */
-    private IConfig $config;
+    private IAppConfig $config;
 
     /**
      * Map URL key to config key (to avoid conflict with Nextcloud's 'enabled' key).
@@ -38,14 +38,14 @@ class SettingsController extends Controller
     /**
      * Constructor.
      *
-     * @param string   $appName The application name.
-     * @param IRequest $request The request object.
-     * @param IConfig  $config  The configuration service.
+     * @param string     $appName The application name.
+     * @param IRequest   $request The request object.
+     * @param IAppConfig $config  The configuration service.
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        IConfig $config
+        IAppConfig $config
     ) {
         parent::__construct($appName, $request);
         $this->config = $config;
@@ -66,7 +66,7 @@ class SettingsController extends Controller
         }
 
         $configKey = self::KEY_MAP[$key];
-        $this->config->setAppValue(Application::APP_ID, $configKey, $value);
+        $this->config->setValueString(Application::APP_ID, $configKey, (string) $value);
 
         return new JSONResponse(['status' => 'ok']);
     }

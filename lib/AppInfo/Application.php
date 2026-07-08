@@ -14,6 +14,7 @@ use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCP\IAppConfig;
 use OCP\Util;
 
 /**
@@ -61,8 +62,8 @@ class Application extends App implements IBootstrap
      */
     public function boot(IBootContext $context): void
     {
-        $config = \OC::$server->getConfig();
-        $enabled = $config->getAppValue(self::APP_ID, 'bridge_enabled', 'no') === 'yes';
+        $appConfig = $context->getServerContainer()->get(IAppConfig::class);
+        $enabled = $appConfig->getValueString(self::APP_ID, 'bridge_enabled', 'no') === 'yes';
 
         if ($enabled) {
             // Inject bridge script when mail_roundcube app is loaded

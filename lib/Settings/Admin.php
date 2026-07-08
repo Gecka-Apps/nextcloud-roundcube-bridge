@@ -12,7 +12,7 @@ namespace OCA\MailRoundcubeBridge\Settings;
 
 use OCA\MailRoundcubeBridge\AppInfo\Application;
 use OCP\AppFramework\Http\TemplateResponse;
-use OCP\IConfig;
+use OCP\IAppConfig;
 use OCP\IInitialStateService;
 use OCP\Settings\ISettings;
 use OCP\Util;
@@ -25,9 +25,9 @@ class Admin implements ISettings
     /**
      * Nextcloud configuration service.
      *
-     * @var IConfig
+     * @var IAppConfig
      */
-    private IConfig $config;
+    private IAppConfig $config;
 
     /**
      * Initial state service for passing data to frontend.
@@ -39,11 +39,11 @@ class Admin implements ISettings
     /**
      * Constructor.
      *
-     * @param IConfig              $config              The configuration service.
+     * @param IAppConfig           $config              The configuration service.
      * @param IInitialStateService $initialStateService The initial state service.
      */
     public function __construct(
-        IConfig $config,
+        IAppConfig $config,
         IInitialStateService $initialStateService
     ) {
         $this->config = $config;
@@ -61,7 +61,7 @@ class Admin implements ISettings
             Application::APP_ID,
             'admin',
             [
-                'enabled' => $this->config->getAppValue(Application::APP_ID, 'bridge_enabled', 'no'),
+                'enabled' => $this->config->getValueString(Application::APP_ID, 'bridge_enabled', 'no'),
             ]
         );
 
