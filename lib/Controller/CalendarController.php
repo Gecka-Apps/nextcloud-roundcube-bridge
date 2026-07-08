@@ -333,7 +333,7 @@ class CalendarController extends Controller
     private function saveEventToCalendar(int $calendarId, string $uid, string $icsContent, bool $isUpdate): void
     {
         /** @var \OCA\DAV\CalDAV\CalDavBackend $caldavBackend */
-        $caldavBackend = \OC::$server->get(\OCA\DAV\CalDAV\CalDavBackend::class);
+        $caldavBackend = \OCP\Server::get(\OCA\DAV\CalDAV\CalDavBackend::class);
 
         $uri = $uid . '.ics';
 
