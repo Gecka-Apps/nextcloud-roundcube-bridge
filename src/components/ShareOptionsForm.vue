@@ -38,7 +38,7 @@
         <!-- Label -->
         <div class="share-options-form__field">
           <NcTextField
-            :value.sync="label"
+            v-model="label"
             :label="t('mail_roundcube_bridge', 'Label')"
             :placeholder="t('mail_roundcube_bridge', 'e.g. recipient email')"
           />
@@ -47,7 +47,7 @@
         <!-- Password toggle + field -->
         <div class="share-options-form__field">
           <NcCheckboxRadioSwitch
-            :checked.sync="passwordEnabled"
+            v-model="passwordEnabled"
             :disabled="passwordEnforced"
             type="switch"
           >
@@ -58,7 +58,7 @@
           </NcCheckboxRadioSwitch>
           <div v-if="passwordEnabled" class="share-options-form__password-row">
             <NcPasswordField
-              :value.sync="password"
+              v-model="password"
               :label="t('mail_roundcube_bridge', 'Password')"
             />
             <NcButton type="secondary" @click="generatePassword">
@@ -70,7 +70,7 @@
         <!-- Expiry date toggle + picker -->
         <div class="share-options-form__field">
           <NcCheckboxRadioSwitch
-            :checked.sync="expiryEnabled"
+            v-model="expiryEnabled"
             :disabled="expiryEnforced"
             type="switch"
           >
@@ -109,19 +109,19 @@
         <div v-if="advancedOpen" class="share-options-form__advanced">
           <!-- Hide download (only when server allows view without download) -->
           <div v-if="allowViewWithoutDownload" class="share-options-form__field">
-            <NcCheckboxRadioSwitch :checked.sync="hideDownload" type="switch">
+            <NcCheckboxRadioSwitch v-model="hideDownload" type="switch">
               {{ t('mail_roundcube_bridge', 'Hide download') }}
             </NcCheckboxRadioSwitch>
           </div>
 
           <!-- Note to recipient -->
           <div class="share-options-form__field">
-            <NcCheckboxRadioSwitch :checked.sync="noteEnabled" type="switch">
+            <NcCheckboxRadioSwitch v-model="noteEnabled" type="switch">
               {{ t('mail_roundcube_bridge', 'Note to recipient') }}
             </NcCheckboxRadioSwitch>
             <NcTextArea
               v-if="noteEnabled"
-              :value.sync="note"
+              v-model="note"
               :label="t('mail_roundcube_bridge', 'Note to recipient')"
               :placeholder="t('mail_roundcube_bridge', 'Enter a note for the share recipient')"
               class="share-options-form__note"
@@ -130,24 +130,24 @@
 
           <!-- Video verification (Talk required + password must be enabled) -->
           <div v-if="talkEnabled && passwordEnabled" class="share-options-form__field">
-            <NcCheckboxRadioSwitch :checked.sync="sendPasswordByTalk" type="switch">
+            <NcCheckboxRadioSwitch v-model="sendPasswordByTalk" type="switch">
               {{ t('mail_roundcube_bridge', 'Video verification') }}
             </NcCheckboxRadioSwitch>
           </div>
 
           <!-- Custom permissions -->
           <div class="share-options-form__field">
-            <NcCheckboxRadioSwitch :checked.sync="customPermissions" type="switch">
+            <NcCheckboxRadioSwitch v-model="customPermissions" type="switch">
               {{ t('mail_roundcube_bridge', 'Custom permissions') }}
             </NcCheckboxRadioSwitch>
             <div v-if="customPermissions" class="share-options-form__permissions">
-              <NcCheckboxRadioSwitch :checked="true" :disabled="true" type="switch">
+              <NcCheckboxRadioSwitch :model-value="true" :disabled="true" type="switch">
                 {{ t('mail_roundcube_bridge', 'Read') }}
               </NcCheckboxRadioSwitch>
-              <NcCheckboxRadioSwitch :checked.sync="permRead" type="switch">
+              <NcCheckboxRadioSwitch v-model="permRead" type="switch">
                 {{ t('mail_roundcube_bridge', 'Edit') }}
               </NcCheckboxRadioSwitch>
-              <NcCheckboxRadioSwitch :checked.sync="permDelete" type="switch">
+              <NcCheckboxRadioSwitch v-model="permDelete" type="switch">
                 {{ t('mail_roundcube_bridge', 'Delete') }}
               </NcCheckboxRadioSwitch>
             </div>
@@ -184,12 +184,14 @@ import { translate as t } from '@nextcloud/l10n'
 import { generateUrl, imagePath } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
 import { defineComponent, ref, computed, onMounted } from 'vue'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcTextField from '@nextcloud/vue/dist/Components/NcTextField.js'
-import NcPasswordField from '@nextcloud/vue/dist/Components/NcPasswordField.js'
-import NcCheckboxRadioSwitch from '@nextcloud/vue/dist/Components/NcCheckboxRadioSwitch.js'
-import NcTextArea from '@nextcloud/vue/dist/Components/NcTextArea.js'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
+import {
+  NcButton,
+  NcTextField,
+  NcPasswordField,
+  NcCheckboxRadioSwitch,
+  NcTextArea,
+  NcLoadingIcon,
+} from '@nextcloud/vue'
 
 export default defineComponent({
   name: 'ShareOptionsForm',

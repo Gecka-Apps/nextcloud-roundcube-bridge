@@ -1,6 +1,7 @@
 <!--
  * Bridge container component.
- * Handles file picker dialogs for the iframe bridge.
+ * Hosts the share options form for the iframe bridge.
+ * File and folder pickers are opened programmatically via @nextcloud/dialogs.
  *
  * @author Laurent Dinclaux <laurent@gecka.nc>
  * @copyright 2026 Gecka
@@ -8,31 +9,6 @@
  -->
 <template>
   <div class="roundcube-bridge-container">
-    <!-- File picker for attaching files from Nextcloud -->
-    <FilePicker
-      v-if="isFilePickerOpen"
-      :name="t('mail_roundcube_bridge', 'Choose a file to add as attachment')"
-      :buttons="filePickerButtons"
-      @close="onFilePickerClose"
-    />
-    <!-- Folder picker for saving attachments to Nextcloud -->
-    <FilePicker
-      v-if="isFileSaverOpen"
-      :name="t('mail_roundcube_bridge', 'Choose a folder to store the attachment in')"
-      :buttons="fileSaverButtons"
-      :allow-pick-directory="true"
-      :multiselect="false"
-      :mimetype-filter="['httpd/unix-directory']"
-      @close="onFileSaverClose"
-    />
-    <!-- File picker for creating share links -->
-    <FilePicker
-      v-if="isShareLinkPickerOpen"
-      :name="t('mail_roundcube_bridge', 'Choose a file to share as a link')"
-      :buttons="shareLinkPickerButtons"
-      :multiselect="false"
-      @close="onShareLinkPickerClose"
-    />
     <!-- Share options form (shown after file selection) -->
     <ShareOptionsForm
       v-if="isShareOptionsOpen && pendingShareWithOptionsRequest"
@@ -47,8 +23,6 @@
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
-import { FilePickerVue as FilePicker } from '@nextcloud/dialogs/filepicker.js'
 import ShareOptionsForm from './components/ShareOptionsForm.vue'
 import { useIframeBridge } from './composables/useIframeBridge'
 import { ref, onMounted, defineComponent } from 'vue'
@@ -56,7 +30,6 @@ import { ref, onMounted, defineComponent } from 'vue'
 export default defineComponent({
   name: 'BridgeContainer',
   components: {
-    FilePicker,
     ShareOptionsForm,
   },
   setup() {
@@ -113,67 +86,24 @@ export default defineComponent({
       setupIframeDetection()
     })
 
-    // Enable file bridge
+    // Enable file bridge. File/folder pickers open programmatically inside the
+    // composable; only the share form is rendered here.
     const {
-      isFilePickerOpen,
-      isFileSaverOpen,
-      isShareLinkPickerOpen,
       isShareOptionsOpen,
       pendingShareWithOptionsRequest,
       shareServerError,
       shareServerErrorDetail,
-      onFilesPicked,
-      onFilePickerClose,
-      onFolderSelected,
-      onFileSaverClose,
-      onShareLinkFilePicked,
-      onShareLinkPickerClose,
       onShareOptionsSubmit,
       onShareOptionsCancel,
     } = useIframeBridge(iframeRef, { enabled: true })
 
-    // Button configs
-    const filePickerButtons = [
-      {
-        label: t('mail_roundcube_bridge', 'Choose'),
-        callback: onFilesPicked,
-        type: 'primary',
-      },
-    ]
-
-    const fileSaverButtons = [
-      {
-        label: t('mail_roundcube_bridge', 'Choose'),
-        callback: onFolderSelected,
-        type: 'primary',
-      },
-    ]
-
-    const shareLinkPickerButtons = [
-      {
-        label: t('mail_roundcube_bridge', 'Share'),
-        callback: onShareLinkFilePicked,
-        type: 'primary',
-      },
-    ]
-
     return {
-      t,
-      isFilePickerOpen,
-      isFileSaverOpen,
-      isShareLinkPickerOpen,
       isShareOptionsOpen,
       pendingShareWithOptionsRequest,
       shareServerError,
       shareServerErrorDetail,
-      onFilePickerClose,
-      onFileSaverClose,
-      onShareLinkPickerClose,
       onShareOptionsSubmit,
       onShareOptionsCancel,
-      filePickerButtons,
-      fileSaverButtons,
-      shareLinkPickerButtons,
     }
   },
 })

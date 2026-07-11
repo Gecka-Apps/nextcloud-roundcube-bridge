@@ -12,9 +12,9 @@
       :description="t('mail_roundcube_bridge', 'Integration with Nextcloud services (files, calendar).')"
     >
       <NcCheckboxRadioSwitch
-        :checked="enabled"
+        :model-value="enabled"
         :loading="loading"
-        @update:checked="setEnabled"
+        @update:model-value="setEnabled"
       >
         {{ t('mail_roundcube_bridge', 'Enable Nextcloud bridge') }}
       </NcCheckboxRadioSwitch>

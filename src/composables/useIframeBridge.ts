@@ -14,6 +14,8 @@
 import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { generateRemoteUrl, generateUrl } from '@nextcloud/router'
 import { getCurrentUser, getRequestToken } from '@nextcloud/auth'
+import { getFilePickerBuilder } from '@nextcloud/dialogs'
+import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import type { Node } from '@nextcloud/files'
 import logger from '../logger'
@@ -490,7 +492,18 @@ export function useIframeBridge(
       multiple: message.multiple ?? true,
       mimeTypes: message.mimeTypes,
     }
-    isFilePickerOpen.value = true
+
+    const builder = getFilePickerBuilder(t('mail_roundcube_bridge', 'Choose a file to add as attachment'))
+      .setMultiSelect(message.multiple ?? true)
+      .addButton({
+        label: t('mail_roundcube_bridge', 'Choose'),
+        type: 'primary',
+        callback: (nodes) => onFilesPicked(nodes as Node[]),
+      })
+    if (message.mimeTypes?.length) {
+      builder.setMimeTypeFilter(message.mimeTypes)
+    }
+    builder.build().pick().catch(() => onFilePickerClose())
   }
 
   /**
@@ -580,7 +593,7 @@ export function useIframeBridge(
       mimeType: message.mimeType,
     }
     pendingSaveFilesRequest.value = null
-    isFileSaverOpen.value = true
+    openFolderPicker()
   }
 
   /**
@@ -594,7 +607,25 @@ export function useIframeBridge(
       files: message.files,
     }
     pendingSaveRequest.value = null
-    isFileSaverOpen.value = true
+    openFolderPicker()
+  }
+
+  /**
+   * Open the Nextcloud folder picker for saving attachments.
+   */
+  const openFolderPicker = (): void => {
+    getFilePickerBuilder(t('mail_roundcube_bridge', 'Choose a folder to store the attachment in'))
+      .setMultiSelect(false)
+      .setMimeTypeFilter(['httpd/unix-directory'])
+      .allowDirectories(true)
+      .addButton({
+        label: t('mail_roundcube_bridge', 'Choose'),
+        type: 'primary',
+        callback: (nodes) => onFolderSelected(nodes as Node[]),
+      })
+      .build()
+      .pick()
+      .catch(() => onFileSaverClose())
   }
 
   /**
@@ -715,7 +746,16 @@ export function useIframeBridge(
     pendingShareLinkRequest.value = {
       requestId: message.requestId,
     }
-    isShareLinkPickerOpen.value = true
+    getFilePickerBuilder(t('mail_roundcube_bridge', 'Choose a file to share as a link'))
+      .setMultiSelect(false)
+      .addButton({
+        label: t('mail_roundcube_bridge', 'Share'),
+        type: 'primary',
+        callback: (nodes) => onShareLinkFilePicked(nodes as Node[]),
+      })
+      .build()
+      .pick()
+      .catch(() => onShareLinkPickerClose())
   }
 
   /**

@@ -9,7 +9,7 @@
  * @license AGPL-3.0-or-later
  */
 
-import Vue from 'vue'
+import { createApp } from 'vue'
 import BridgeContainer from './BridgeContainer.vue'
 import logger from './logger'
 
@@ -261,9 +261,7 @@ mountPoint.id = 'mail_roundcube_bridge-container'
 document.body.appendChild(mountPoint)
 
 // Mount Vue component
-new Vue({
-  render: (h) => h(BridgeContainer),
-}).$mount('#mail_roundcube_bridge-container')
+createApp(BridgeContainer).mount('#mail_roundcube_bridge-container')
 
 // Start watching for iframe
 watchForIframe()

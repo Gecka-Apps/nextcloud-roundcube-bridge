@@ -6,9 +6,7 @@
  * @license AGPL-3.0-or-later
  */
 
-import Vue from 'vue'
+import { createApp } from 'vue'
 import AdminSettings from './AdminSettings.vue'
 
-new Vue({
-  render: (h) => h(AdminSettings),
-}).$mount('#mail_roundcube_bridge-admin-settings')
+createApp(AdminSettings).mount('#mail_roundcube_bridge-admin-settings')
