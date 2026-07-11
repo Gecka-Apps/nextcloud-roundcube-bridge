@@ -18,13 +18,13 @@ namespace OCA\MailRoundcubeBridge\Controller;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IDBConnection;
 use OCP\IRequest;
 use OCP\IUserSession;
-use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
-use Sabre\VObject\Reader;
 use Sabre\VObject\Component\VEvent;
 use Sabre\VObject\Property;
+use Sabre\VObject\Reader;
 
 /**
  * Controller for calendar event operations.
@@ -32,8 +32,7 @@ use Sabre\VObject\Property;
  * Provides API endpoints for adding events to Nextcloud calendars,
  * with proper handling of soft-deleted events (orphaned UIDs).
  */
-class CalendarController extends Controller
-{
+class CalendarController extends Controller {
     /**
      * User session service.
      *
@@ -58,18 +57,18 @@ class CalendarController extends Controller
     /**
      * Constructor.
      *
-     * @param string          $appName     The application name.
-     * @param IRequest        $request     The request object.
-     * @param IUserSession    $userSession The user session service.
-     * @param IDBConnection   $db          The database connection service.
-     * @param LoggerInterface $logger      The logger service.
+     * @param string $appName The application name.
+     * @param IRequest $request The request object.
+     * @param IUserSession $userSession The user session service.
+     * @param IDBConnection $db The database connection service.
+     * @param LoggerInterface $logger The logger service.
      */
     public function __construct(
         string $appName,
         IRequest $request,
         IUserSession $userSession,
         IDBConnection $db,
-        LoggerInterface $logger
+        LoggerInterface $logger,
     ) {
         parent::__construct($appName, $request);
         $this->userSession = $userSession;
@@ -85,12 +84,11 @@ class CalendarController extends Controller
      * @NoAdminRequired
      *
      * @param string $calendarUri The calendar URI (e.g., "personal" or full path).
-     * @param string $icsContent  The ICS content.
+     * @param string $icsContent The ICS content.
      *
      * @return JSONResponse The response containing success status, updated flag, and UID.
      */
-    public function addEvent(string $calendarUri, string $icsContent): JSONResponse
-    {
+    public function addEvent(string $calendarUri, string $icsContent): JSONResponse {
         $user = $this->userSession->getUser();
         if ($user === null) {
             return new JSONResponse(['error' => 'Not authenticated'], Http::STATUS_UNAUTHORIZED);
@@ -177,8 +175,7 @@ class CalendarController extends Controller
      *
      * @return JSONResponse The response containing the parsed event fields.
      */
-    public function parse(string $icsContent): JSONResponse
-    {
+    public function parse(string $icsContent): JSONResponse {
         $user = $this->userSession->getUser();
         if ($user === null) {
             return new JSONResponse(['error' => 'Not authenticated'], Http::STATUS_UNAUTHORIZED);
@@ -213,12 +210,11 @@ class CalendarController extends Controller
      * Read a text property as a plain string.
      *
      * @param VEvent $vevent The event component.
-     * @param string $name   The property name.
+     * @param string $name The property name.
      *
      * @return string The unescaped value, or an empty string when absent.
      */
-    private function stringProp(VEvent $vevent, string $name): string
-    {
+    private function stringProp(VEvent $vevent, string $name): string {
         $prop = $vevent->$name;
         return $prop !== null ? (string)$prop : '';
     }
@@ -227,12 +223,11 @@ class CalendarController extends Controller
      * Read a date/time property.
      *
      * @param VEvent $vevent The event component.
-     * @param string $name   The property name (DTSTART/DTEND).
+     * @param string $name The property name (DTSTART/DTEND).
      *
      * @return array|null Object with ISO date and all-day flag, or null when absent.
      */
-    private function dateProp(VEvent $vevent, string $name): ?array
-    {
+    private function dateProp(VEvent $vevent, string $name): ?array {
         $prop = $vevent->$name;
         if (!$prop instanceof Property) {
             return null;
@@ -262,8 +257,7 @@ class CalendarController extends Controller
      *
      * @return array|null Object with name and email, or null when absent.
      */
-    private function calendarUser(?Property $prop): ?array
-    {
+    private function calendarUser(?Property $prop): ?array {
         if ($prop === null) {
             return null;
         }
@@ -284,8 +278,7 @@ class CalendarController extends Controller
      *
      * @return array The attendees, each with name, email and status.
      */
-    private function attendees(VEvent $vevent): array
-    {
+    private function attendees(VEvent $vevent): array {
         $attendees = [];
         if ($vevent->ATTENDEE === null) {
             return $attendees;
@@ -314,8 +307,7 @@ class CalendarController extends Controller
      *
      * @return string|null The calendar name or null if invalid.
      */
-    private function extractCalendarName(string $uri): ?string
-    {
+    private function extractCalendarName(string $uri): ?string {
         // Remove trailing slash
         $uri = rtrim($uri, '/');
 
@@ -335,13 +327,12 @@ class CalendarController extends Controller
     /**
      * Get calendar ID by name for a user.
      *
-     * @param string $userId       The user ID.
+     * @param string $userId The user ID.
      * @param string $calendarName The calendar name.
      *
      * @return integer|null The calendar ID or null if not found.
      */
-    private function getCalendarIdByName(string $userId, string $calendarName): ?int
-    {
+    private function getCalendarIdByName(string $userId, string $calendarName): ?int {
         $qb = $this->db->getQueryBuilder();
         $qb->select('id')
             ->from('calendars')
@@ -362,8 +353,7 @@ class CalendarController extends Controller
      *
      * @return string|null The UID or null if not found.
      */
-    private function extractUidFromIcs(string $ics): ?string
-    {
+    private function extractUidFromIcs(string $ics): ?string {
         if (preg_match('/^UID:([^\r\n]+)/im', $ics, $matches)) {
             return trim($matches[1]);
         }
@@ -375,8 +365,7 @@ class CalendarController extends Controller
      *
      * @return string The generated UID.
      */
-    private function generateUid(): string
-    {
+    private function generateUid(): string {
         return sprintf(
             '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
             mt_rand(0, 0xffff),
@@ -394,12 +383,11 @@ class CalendarController extends Controller
      * Get existing event (not soft-deleted).
      *
      * @param integer $calendarId The calendar ID.
-     * @param string  $uid        The event UID.
+     * @param string $uid The event UID.
      *
      * @return array|null The event data or null if not found.
      */
-    private function getExistingEvent(int $calendarId, string $uid): ?array
-    {
+    private function getExistingEvent(int $calendarId, string $uid): ?array {
         $qb = $this->db->getQueryBuilder();
         $qb->select('id', 'uri', 'etag')
             ->from('calendarobjects')
@@ -419,12 +407,11 @@ class CalendarController extends Controller
      * Get orphaned event (soft-deleted, still has UID constraint).
      *
      * @param integer $calendarId The calendar ID.
-     * @param string  $uid        The event UID.
+     * @param string $uid The event UID.
      *
      * @return array|null The event data or null if not found.
      */
-    private function getOrphanedEvent(int $calendarId, string $uid): ?array
-    {
+    private function getOrphanedEvent(int $calendarId, string $uid): ?array {
         $qb = $this->db->getQueryBuilder();
         $qb->select('id', 'uri')
             ->from('calendarobjects')
@@ -447,8 +434,7 @@ class CalendarController extends Controller
      *
      * @return void
      */
-    private function purgeOrphanedEvent(int $objectId): void
-    {
+    private function purgeOrphanedEvent(int $objectId): void {
         // Delete from calendarobjects
         $qb = $this->db->getQueryBuilder();
         $qb->delete('calendarobjects')
@@ -466,14 +452,13 @@ class CalendarController extends Controller
      * Save event to calendar using CalDAV backend.
      *
      * @param integer $calendarId The calendar ID.
-     * @param string  $uid        The event UID.
-     * @param string  $icsContent The ICS content.
-     * @param boolean $isUpdate   Whether this is an update operation.
+     * @param string $uid The event UID.
+     * @param string $icsContent The ICS content.
+     * @param boolean $isUpdate Whether this is an update operation.
      *
      * @return void
      */
-    private function saveEventToCalendar(int $calendarId, string $uid, string $icsContent, bool $isUpdate): void
-    {
+    private function saveEventToCalendar(int $calendarId, string $uid, string $icsContent, bool $isUpdate): void {
         /** @var \OCA\DAV\CalDAV\CalDavBackend $caldavBackend */
         $caldavBackend = \OCP\Server::get(\OCA\DAV\CalDAV\CalDavBackend::class);
 

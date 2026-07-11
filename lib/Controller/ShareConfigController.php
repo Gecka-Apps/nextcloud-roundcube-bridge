@@ -10,9 +10,9 @@ declare(strict_types=1);
 
 namespace OCA\MailRoundcubeBridge\Controller;
 
+use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\App\IAppManager;
 use OCP\Constants;
 use OCP\IAppConfig;
 use OCP\IRequest;
@@ -26,8 +26,7 @@ use OCP\Share\IManager as IShareManager;
  * into a single JSON response, so the frontend doesn't need to
  * juggle multiple sources (capabilities, OC.appConfig, etc.).
  */
-class ShareConfigController extends Controller
-{
+class ShareConfigController extends Controller {
     private IShareManager $shareManager;
     private IAppManager $appManager;
     private IAppConfig $appConfig;
@@ -39,7 +38,7 @@ class ShareConfigController extends Controller
         IShareManager $shareManager,
         IAppManager $appManager,
         IAppConfig $appConfig,
-        IUserSession $userSession
+        IUserSession $userSession,
     ) {
         parent::__construct($appName, $request);
         $this->shareManager = $shareManager;
@@ -55,8 +54,7 @@ class ShareConfigController extends Controller
      *
      * @return JSONResponse
      */
-    public function get(): JSONResponse
-    {
+    public function get(): JSONResponse {
         $user = $this->userSession->getUser();
         $userId = $user?->getUID();
 

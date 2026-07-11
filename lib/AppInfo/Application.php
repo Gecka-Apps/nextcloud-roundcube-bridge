@@ -23,8 +23,7 @@ use OCP\Util;
  * Provides integration between RoundCube (embedded via mail_roundcube)
  * and Nextcloud services (files, calendar).
  */
-class Application extends App implements IBootstrap
-{
+class Application extends App implements IBootstrap {
     /**
      * Application ID constant.
      */
@@ -35,8 +34,7 @@ class Application extends App implements IBootstrap
      *
      * @param array $urlParams URL parameters.
      */
-    public function __construct(array $urlParams = [])
-    {
+    public function __construct(array $urlParams = []) {
         parent::__construct(self::APP_ID, $urlParams);
     }
 
@@ -47,8 +45,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      */
-    public function register(IRegistrationContext $context): void
-    {
+    public function register(IRegistrationContext $context): void {
     }
 
     /**
@@ -60,8 +57,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      */
-    public function boot(IBootContext $context): void
-    {
+    public function boot(IBootContext $context): void {
         $appConfig = $context->getServerContainer()->get(IAppConfig::class);
         $enabled = $appConfig->getValueString(self::APP_ID, 'bridge_enabled', 'no') === 'yes';
 

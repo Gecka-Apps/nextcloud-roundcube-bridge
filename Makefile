@@ -143,15 +143,15 @@ webpack-clean:
 	rm -rf js/
 .PHONY: webpack-clean
 
-#@@ Run phpcs on the PHP code
-phpcs: composer
-	vendor/bin/phpcs -s --report=emacs --standard=$(SRCDIR)/.phpcs.xml lib/ appinfo/ templates/
-.PHONY: phpcs
+#@@ Check PHP code style against the Nextcloud coding standard
+cs-check: composer
+	vendor/bin/php-cs-fixer fix --dry-run --diff
+.PHONY: cs-check
 
-#@@ Run phpcs on the PHP code, hiding mere warnings
-phpcs-errors: composer
-	vendor/bin/phpcs -n --standard=$(SRCDIR)/.phpcs.xml lib/ appinfo/ templates/|grep FILE:|awk '{ print $$2; }'
-.PHONY: phpcs-errors
+#@@ Fix PHP code style to the Nextcloud coding standard
+cs-fix: composer
+	vendor/bin/php-cs-fixer fix
+.PHONY: cs-fix
 
 #@@ Run phpmd on the PHP code
 phpmd: composer

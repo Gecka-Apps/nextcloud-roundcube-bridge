@@ -28,8 +28,7 @@ use Psr\Log\LoggerInterface;
  * Creates public share links for files with configurable options
  * (password, expiry, permissions, etc.).
  */
-class ShareController extends Controller
-{
+class ShareController extends Controller {
     private IShareManager $shareManager;
     private IRootFolder $rootFolder;
     private IUserSession $userSession;
@@ -43,7 +42,7 @@ class ShareController extends Controller
         IRootFolder $rootFolder,
         IUserSession $userSession,
         IURLGenerator $urlGenerator,
-        LoggerInterface $logger
+        LoggerInterface $logger,
     ) {
         parent::__construct($appName, $request);
         $this->shareManager = $shareManager;
@@ -58,14 +57,14 @@ class ShareController extends Controller
      *
      * @NoAdminRequired
      *
-     * @param string      $path              File path relative to user root.
-     * @param string|null $password          Optional share password.
-     * @param string|null $expireDate        Optional expiration date (Y-m-d).
-     * @param string|null $label             Optional share label.
-     * @param string|null $note              Optional note for the recipient.
-     * @param bool|null   $hideDownload      Whether to hide the download button.
-     * @param int|null    $permissions       Permission bitfield (default: read-only = 1).
-     * @param bool|null   $sendPasswordByTalk Whether to verify identity via Talk.
+     * @param string $path File path relative to user root.
+     * @param string|null $password Optional share password.
+     * @param string|null $expireDate Optional expiration date (Y-m-d).
+     * @param string|null $label Optional share label.
+     * @param string|null $note Optional note for the recipient.
+     * @param bool|null $hideDownload Whether to hide the download button.
+     * @param int|null $permissions Permission bitfield (default: read-only = 1).
+     * @param bool|null $sendPasswordByTalk Whether to verify identity via Talk.
      *
      * @return JSONResponse
      */
@@ -77,7 +76,7 @@ class ShareController extends Controller
         ?string $note = null,
         ?bool $hideDownload = null,
         ?int $permissions = null,
-        ?bool $sendPasswordByTalk = null
+        ?bool $sendPasswordByTalk = null,
     ): JSONResponse {
         $user = $this->userSession->getUser();
         if ($user === null) {

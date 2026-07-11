@@ -19,8 +19,7 @@ use OCP\IRequest;
 /**
  * Controller for admin settings management.
  */
-class SettingsController extends Controller
-{
+class SettingsController extends Controller {
     /**
      * Nextcloud configuration service.
      *
@@ -38,14 +37,14 @@ class SettingsController extends Controller
     /**
      * Constructor.
      *
-     * @param string     $appName The application name.
-     * @param IRequest   $request The request object.
-     * @param IAppConfig $config  The configuration service.
+     * @param string $appName The application name.
+     * @param IRequest $request The request object.
+     * @param IAppConfig $config The configuration service.
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        IAppConfig $config
+        IAppConfig $config,
     ) {
         parent::__construct($appName, $request);
         $this->config = $config;
@@ -54,19 +53,18 @@ class SettingsController extends Controller
     /**
      * Set an admin setting value.
      *
-     * @param string $key   The setting key.
-     * @param mixed  $value The setting value.
+     * @param string $key The setting key.
+     * @param mixed $value The setting value.
      *
      * @return JSONResponse The response.
      */
-    public function setAdmin(string $key, mixed $value): JSONResponse
-    {
+    public function setAdmin(string $key, mixed $value): JSONResponse {
         if (!isset(self::KEY_MAP[$key])) {
             return new JSONResponse(['error' => 'Invalid key'], 400);
         }
 
         $configKey = self::KEY_MAP[$key];
-        $this->config->setValueString(Application::APP_ID, $configKey, (string) $value);
+        $this->config->setValueString(Application::APP_ID, $configKey, (string)$value);
 
         return new JSONResponse(['status' => 'ok']);
     }

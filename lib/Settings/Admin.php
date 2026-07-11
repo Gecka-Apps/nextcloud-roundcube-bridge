@@ -20,8 +20,7 @@ use OCP\Util;
 /**
  * Admin settings page for the Nextbridge Roundcube Connector app.
  */
-class Admin implements ISettings
-{
+class Admin implements ISettings {
     /**
      * Nextcloud configuration service.
      *
@@ -39,12 +38,12 @@ class Admin implements ISettings
     /**
      * Constructor.
      *
-     * @param IAppConfig           $config              The configuration service.
+     * @param IAppConfig $config The configuration service.
      * @param IInitialStateService $initialStateService The initial state service.
      */
     public function __construct(
         IAppConfig $config,
-        IInitialStateService $initialStateService
+        IInitialStateService $initialStateService,
     ) {
         $this->config = $config;
         $this->initialStateService = $initialStateService;
@@ -55,8 +54,7 @@ class Admin implements ISettings
      *
      * @return TemplateResponse The template response.
      */
-    public function getForm(): TemplateResponse
-    {
+    public function getForm(): TemplateResponse {
         $this->initialStateService->provideInitialState(
             Application::APP_ID,
             'admin',
@@ -75,8 +73,7 @@ class Admin implements ISettings
      *
      * @return string The section ID (uses mail_roundcube's section).
      */
-    public function getSection(): string
-    {
+    public function getSection(): string {
         // Use mail_roundcube's admin section
         return 'mail_roundcube';
     }
@@ -86,8 +83,7 @@ class Admin implements ISettings
      *
      * @return integer The priority (lower = appears after mail_roundcube's own settings).
      */
-    public function getPriority(): int
-    {
+    public function getPriority(): int {
         // Lower priority = appears after mail_roundcube's own settings
         return 60;
     }
