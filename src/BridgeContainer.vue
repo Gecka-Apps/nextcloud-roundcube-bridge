@@ -1,6 +1,6 @@
 <!--
  * Bridge container component.
- * Hosts the share options form for the iframe bridge.
+ * Hosts the share options form and calendar picker for the iframe bridge.
  * File and folder pickers are opened programmatically via @nextcloud/dialogs.
  *
  * @author Laurent Dinclaux <laurent@gecka.nc>
@@ -19,11 +19,21 @@
       @submit="onShareOptionsSubmit"
       @cancel="onShareOptionsCancel"
     />
+    <!-- Calendar picker with event preview (shown for calendar attachments) -->
+    <CalendarPickerForm
+      v-if="isCalendarPickerOpen && calendarEvent"
+      :event="calendarEvent"
+      :calendars="calendarList"
+      :server-error="calendarError"
+      @submit="onCalendarSubmit"
+      @cancel="onCalendarCancel"
+    />
   </div>
 </template>
 
 <script>
 import ShareOptionsForm from './components/ShareOptionsForm.vue'
+import CalendarPickerForm from './components/CalendarPickerForm.vue'
 import { useIframeBridge } from './composables/useIframeBridge'
 import { ref, onMounted, defineComponent } from 'vue'
 
@@ -31,6 +41,7 @@ export default defineComponent({
   name: 'BridgeContainer',
   components: {
     ShareOptionsForm,
+    CalendarPickerForm,
   },
   setup() {
     // Reference to the RoundCube iframe
@@ -87,14 +98,20 @@ export default defineComponent({
     })
 
     // Enable file bridge. File/folder pickers open programmatically inside the
-    // composable; only the share form is rendered here.
+    // composable; only the share and calendar forms are rendered here.
     const {
       isShareOptionsOpen,
       pendingShareWithOptionsRequest,
       shareServerError,
       shareServerErrorDetail,
+      isCalendarPickerOpen,
+      calendarEvent,
+      calendarList,
+      calendarError,
       onShareOptionsSubmit,
       onShareOptionsCancel,
+      onCalendarSubmit,
+      onCalendarCancel,
     } = useIframeBridge(iframeRef, { enabled: true })
 
     return {
@@ -102,8 +119,14 @@ export default defineComponent({
       pendingShareWithOptionsRequest,
       shareServerError,
       shareServerErrorDetail,
+      isCalendarPickerOpen,
+      calendarEvent,
+      calendarList,
+      calendarError,
       onShareOptionsSubmit,
       onShareOptionsCancel,
+      onCalendarSubmit,
+      onCalendarCancel,
     }
   },
 })

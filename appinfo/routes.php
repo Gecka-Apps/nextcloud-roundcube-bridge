@@ -21,6 +21,11 @@ return [
             'verb' => 'POST',
         ],
         [
+            'name' => 'calendar#parse',
+            'url' => '/api/calendar/parse',
+            'verb' => 'POST',
+        ],
+        [
             'name' => 'share#create',
             'url' => '/api/share',
             'verb' => 'POST',

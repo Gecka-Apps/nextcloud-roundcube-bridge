@@ -22,6 +22,9 @@ use OCP\IRequest;
 use OCP\IUserSession;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
+use Sabre\VObject\Reader;
+use Sabre\VObject\Component\VEvent;
+use Sabre\VObject\Property;
 
 /**
  * Controller for calendar event operations.
@@ -160,6 +163,145 @@ class CalendarController extends Controller
             'updated' => $updated,
             'uid' => $uid,
         ]);
+    }
+
+    /**
+     * Parse ICS content into a structured event for preview.
+     *
+     * The preview is generated server-side from the exact bytes that would be
+     * imported, so the user confirms against what Nextcloud will actually store.
+     *
+     * @NoAdminRequired
+     *
+     * @param string $icsContent The ICS content.
+     *
+     * @return JSONResponse The response containing the parsed event fields.
+     */
+    public function parse(string $icsContent): JSONResponse
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(['error' => 'Not authenticated'], Http::STATUS_UNAUTHORIZED);
+        }
+
+        try {
+            $vcalendar = Reader::read($icsContent);
+        } catch (\Exception $e) {
+            $this->logger->debug('Failed to parse ICS for preview', ['error' => $e->getMessage()]);
+            return new JSONResponse(['error' => 'Invalid calendar data'], Http::STATUS_BAD_REQUEST);
+        }
+
+        // For a recurring event with several VEVENT components, this is the first one.
+        $vevent = $vcalendar->VEVENT;
+        if (!$vevent instanceof VEvent) {
+            return new JSONResponse(['error' => 'No event found'], Http::STATUS_BAD_REQUEST);
+        }
+
+        return new JSONResponse([
+            'summary' => $this->stringProp($vevent, 'SUMMARY'),
+            'description' => $this->stringProp($vevent, 'DESCRIPTION'),
+            'location' => $this->stringProp($vevent, 'LOCATION'),
+            'status' => $this->stringProp($vevent, 'STATUS'),
+            'start' => $this->dateProp($vevent, 'DTSTART'),
+            'end' => $this->dateProp($vevent, 'DTEND'),
+            'organizer' => $this->calendarUser($vevent->ORGANIZER),
+            'attendees' => $this->attendees($vevent),
+        ]);
+    }
+
+    /**
+     * Read a text property as a plain string.
+     *
+     * @param VEvent $vevent The event component.
+     * @param string $name   The property name.
+     *
+     * @return string The unescaped value, or an empty string when absent.
+     */
+    private function stringProp(VEvent $vevent, string $name): string
+    {
+        $prop = $vevent->$name;
+        return $prop !== null ? (string)$prop : '';
+    }
+
+    /**
+     * Read a date/time property.
+     *
+     * @param VEvent $vevent The event component.
+     * @param string $name   The property name (DTSTART/DTEND).
+     *
+     * @return array|null Object with ISO date and all-day flag, or null when absent.
+     */
+    private function dateProp(VEvent $vevent, string $name): ?array
+    {
+        $prop = $vevent->$name;
+        if (!$prop instanceof Property) {
+            return null;
+        }
+
+        $hasTime = true;
+        if ($prop instanceof Property\ICalendar\DateTime) {
+            $hasTime = $prop->hasTime();
+        }
+
+        try {
+            $dateTime = $prop->getDateTime();
+        } catch (\Exception $e) {
+            return null;
+        }
+
+        return [
+            'date' => $hasTime ? $dateTime->format(\DateTimeInterface::ATOM) : $dateTime->format('Y-m-d'),
+            'allDay' => !$hasTime,
+        ];
+    }
+
+    /**
+     * Extract name and email from a CAL-ADDRESS property (ORGANIZER/ATTENDEE).
+     *
+     * @param Property|null $prop The property.
+     *
+     * @return array|null Object with name and email, or null when absent.
+     */
+    private function calendarUser(?Property $prop): ?array
+    {
+        if ($prop === null) {
+            return null;
+        }
+
+        $email = preg_replace('/^mailto:/i', '', (string)$prop);
+        $cn = $prop['CN'];
+
+        return [
+            'name' => $cn !== null ? (string)$cn : '',
+            'email' => $email,
+        ];
+    }
+
+    /**
+     * Extract the list of attendees with participation status.
+     *
+     * @param VEvent $vevent The event component.
+     *
+     * @return array The attendees, each with name, email and status.
+     */
+    private function attendees(VEvent $vevent): array
+    {
+        $attendees = [];
+        if ($vevent->ATTENDEE === null) {
+            return $attendees;
+        }
+
+        foreach ($vevent->ATTENDEE as $attendee) {
+            $entry = $this->calendarUser($attendee);
+            if ($entry === null) {
+                continue;
+            }
+            $partstat = $attendee['PARTSTAT'];
+            $entry['status'] = $partstat !== null ? (string)$partstat : '';
+            $attendees[] = $entry;
+        }
+
+        return $attendees;
     }
 
     /**

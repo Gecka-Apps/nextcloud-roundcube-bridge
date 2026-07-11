@@ -51,16 +51,32 @@ export interface CreateShareLinkMessage {
   requestId: string
 }
 
-export interface GetCalendarsMessage {
-  action: 'getCalendars'
+export interface PickCalendarMessage {
+  action: 'pickCalendar'
   requestId: string
+  icsContent: string
 }
 
-export interface AddToCalendarMessage {
-  action: 'addToCalendar'
-  requestId: string
-  calendarUrl: string
-  icsContent: string
+export interface ParsedEventDate {
+  date: string
+  allDay: boolean
+}
+
+export interface ParsedCalendarUser {
+  name: string
+  email: string
+  status?: string
+}
+
+export interface ParsedEvent {
+  summary: string
+  description: string
+  location: string
+  status: string
+  start: ParsedEventDate | null
+  end: ParsedEventDate | null
+  organizer: ParsedCalendarUser | null
+  attendees: ParsedCalendarUser[]
 }
 
 export interface FilePickedResponse {
@@ -104,23 +120,15 @@ export interface CalendarInfo {
   color: string
 }
 
-export interface CalendarsResponse {
-  action: 'calendarsLoaded'
-  requestId: string
-  success: boolean
-  calendars?: CalendarInfo[]
-  error?: string
-}
-
-export interface EventAddedResponse {
-  action: 'eventAdded'
+export interface CalendarPickedResponse {
+  action: 'calendarPicked'
   requestId: string
   success: boolean
   updated?: boolean // true if event was updated, false if created
   error?: string
 }
 
-type IframeMessage = PickFileMessage | SaveFileMessage | SaveFilesMessage | CreateShareLinkMessage | GetCalendarsMessage | AddToCalendarMessage
+type IframeMessage = PickFileMessage | SaveFileMessage | SaveFilesMessage | CreateShareLinkMessage | PickCalendarMessage
 
 // Pending request state
 interface PendingPickRequest {
@@ -147,16 +155,6 @@ interface PendingSaveFilesRequest {
 
 interface PendingShareLinkRequest {
   requestId: string
-}
-
-interface PendingGetCalendarsRequest {
-  requestId: string
-}
-
-interface PendingAddToCalendarRequest {
-  requestId: string
-  calendarUrl: string
-  icsContent: string
 }
 
 /**
@@ -194,6 +192,13 @@ export function useIframeBridge(
   } | null>(null)
   const shareServerError = ref('')
   const shareServerErrorDetail = ref('')
+
+  // Calendar picker state
+  const isCalendarPickerOpen = ref(false)
+  const pendingCalendarRequest = ref<{ requestId: string; icsContent: string } | null>(null)
+  const calendarEvent = ref<ParsedEvent | null>(null)
+  const calendarList = ref<CalendarInfo[]>([])
+  const calendarError = ref('')
 
   /**
    * Get the WebDAV base URL for the current user.
@@ -344,6 +349,7 @@ export function useIframeBridge(
     <cs:getctag/>
     <c:supported-calendar-component-set/>
     <oc:calendar-enabled/>
+    <d:current-user-privilege-set/>
   </d:prop>
 </d:propfind>`
 
@@ -393,6 +399,14 @@ export function useIframeBridge(
       // Check if calendar is enabled
       const enabledEl = resp.getElementsByTagNameNS('http://owncloud.org/ns', 'calendar-enabled')[0]
       if (enabledEl && enabledEl.textContent === '0') continue
+
+      // Skip read-only calendars (e.g. the generated contact birthdays calendar,
+      // calendars shared without write access): the user must be able to write.
+      const privilegeSet = resp.getElementsByTagNameNS('DAV:', 'current-user-privilege-set')[0]
+      const canWrite = privilegeSet !== undefined
+        && (privilegeSet.getElementsByTagNameNS('DAV:', 'write').length > 0
+          || privilegeSet.getElementsByTagNameNS('DAV:', 'write-content').length > 0)
+      if (!canWrite) continue
 
       // Get calendar URL
       const hrefEl = resp.getElementsByTagNameNS('DAV:', 'href')[0]
@@ -444,6 +458,20 @@ export function useIframeBridge(
   }
 
   /**
+   * Parse ICS content into a structured event for preview.
+   * Parsing happens server-side so the preview reflects the exact bytes
+   * Nextcloud would import.
+   * @param icsContent - The ICS content of the event
+   */
+  const parseEvent = async (icsContent: string): Promise<ParsedEvent> => {
+    const response = await axios.post(
+      generateUrl('/apps/mail_roundcube_bridge/api/calendar/parse'),
+      { icsContent }
+    )
+    return response.data
+  }
+
+  /**
    * Convert ArrayBuffer to base64 string.
    */
   const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
@@ -470,7 +498,7 @@ export function useIframeBridge(
   /**
    * Send a message to the iframe.
    */
-  const sendToIframe = (message: FilePickedResponse | FileSavedResponse | ShareLinkCreatedResponse | CalendarsResponse | EventAddedResponse): void => {
+  const sendToIframe = (message: FilePickedResponse | FileSavedResponse | ShareLinkCreatedResponse | CalendarPickedResponse): void => {
     const iframe = iframeRef.value
     if (!iframe?.contentWindow) {
       logger.error('Cannot send message: iframe not available')
@@ -901,53 +929,96 @@ export function useIframeBridge(
   }
 
   /**
-   * Handle get calendars request from iframe.
+   * Handle pick calendar request from iframe.
+   * Parses the event and loads the calendars, then opens the picker so the
+   * user confirms against a Nextcloud-rendered preview.
    */
-  const handleGetCalendars = async (message: GetCalendarsMessage): Promise<void> => {
-    logger.info('Handling getCalendars request')
+  const handlePickCalendar = async (message: PickCalendarMessage): Promise<void> => {
+    logger.info('Handling pickCalendar request')
+    isProcessing.value = true
+    pendingCalendarRequest.value = {
+      requestId: message.requestId,
+      icsContent: message.icsContent,
+    }
+    calendarError.value = ''
 
     try {
-      const calendars = await fetchCalendars()
-      sendToIframe({
-        action: 'calendarsLoaded',
-        requestId: message.requestId,
-        success: true,
-        calendars,
-      })
+      const [event, calendars] = await Promise.all([
+        parseEvent(message.icsContent),
+        fetchCalendars(),
+      ])
+
+      if (!calendars.length) {
+        sendToIframe({
+          action: 'calendarPicked',
+          requestId: message.requestId,
+          success: false,
+          error: 'No calendars available',
+        })
+        pendingCalendarRequest.value = null
+        isProcessing.value = false
+        return
+      }
+
+      calendarEvent.value = event
+      calendarList.value = calendars
+      isCalendarPickerOpen.value = true
     } catch (error) {
-      logger.error('Failed to fetch calendars', { error })
+      logger.error('Failed to prepare calendar picker', { error })
       sendToIframe({
-        action: 'calendarsLoaded',
+        action: 'calendarPicked',
         requestId: message.requestId,
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch calendars',
+        error: error instanceof Error ? error.message : 'Failed to read event',
       })
+      pendingCalendarRequest.value = null
+      isProcessing.value = false
     }
   }
 
   /**
-   * Handle add to calendar request from iframe.
+   * Callback when the user confirms a calendar in the picker.
    */
-  const handleAddToCalendar = async (message: AddToCalendarMessage): Promise<void> => {
-    logger.info('Handling addToCalendar request', { calendarUrl: message.calendarUrl })
+  const onCalendarSubmit = async (calendarUrl: string): Promise<void> => {
+    const request = pendingCalendarRequest.value
+    if (!request) {
+      logger.error('No pending calendar request')
+      return
+    }
 
     try {
-      const result = await addEventToCalendar(message.calendarUrl, message.icsContent)
+      const result = await addEventToCalendar(calendarUrl, request.icsContent)
       sendToIframe({
-        action: 'eventAdded',
-        requestId: message.requestId,
+        action: 'calendarPicked',
+        requestId: request.requestId,
         success: true,
         updated: result.updated,
       })
+      pendingCalendarRequest.value = null
+      isCalendarPickerOpen.value = false
+      isProcessing.value = false
     } catch (error) {
       logger.error('Failed to add event to calendar', { error })
-      sendToIframe({
-        action: 'eventAdded',
-        requestId: message.requestId,
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to add event',
-      })
+      calendarError.value = error instanceof Error ? error.message : 'Failed to add event'
     }
+  }
+
+  /**
+   * Callback when the calendar picker is cancelled.
+   */
+  const onCalendarCancel = (): void => {
+    const request = pendingCalendarRequest.value
+    if (request) {
+      sendToIframe({
+        action: 'calendarPicked',
+        requestId: request.requestId,
+        success: false,
+        error: 'Cancelled',
+      })
+      pendingCalendarRequest.value = null
+    }
+    isCalendarPickerOpen.value = false
+    isProcessing.value = false
   }
 
   /**
@@ -979,11 +1050,8 @@ export function useIframeBridge(
       case 'createShareLink':
         handleCreateShareLink(message)
         break
-      case 'getCalendars':
-        handleGetCalendars(message)
-        break
-      case 'addToCalendar':
-        handleAddToCalendar(message)
+      case 'pickCalendar':
+        handlePickCalendar(message)
         break
       default:
         logger.debug('Unknown action', { action: (message as { action: string }).action })
@@ -1021,6 +1089,11 @@ export function useIframeBridge(
     pendingShareWithOptionsRequest,
     shareServerError,
     shareServerErrorDetail,
+    // Calendar picker state
+    isCalendarPickerOpen,
+    calendarEvent,
+    calendarList,
+    calendarError,
     // Callbacks for FilePicker component
     onFilesPicked,
     onFilePickerClose,
@@ -1032,5 +1105,8 @@ export function useIframeBridge(
     // Callbacks for Share Options Form
     onShareOptionsSubmit,
     onShareOptionsCancel,
+    // Callbacks for Calendar Picker
+    onCalendarSubmit,
+    onCalendarCancel,
   }
 }

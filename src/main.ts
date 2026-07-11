@@ -126,18 +126,9 @@ function injectBridgeClient(iframe: HTMLIFrameElement): void {
             });
           },
 
-          getCalendars: function() {
+          pickCalendar: function(icsContent) {
             return this.sendAndWait({
-              action: 'getCalendars'
-            }).then(function(response) {
-              return response.calendars || [];
-            });
-          },
-
-          addToCalendar: function(calendarUrl, icsContent) {
-            return this.sendAndWait({
-              action: 'addToCalendar',
-              calendarUrl: calendarUrl,
+              action: 'pickCalendar',
               icsContent: icsContent
             });
           },

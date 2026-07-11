@@ -41,6 +41,21 @@ OC.L10N.register(
     "The expiration date exceeds the maximum allowed." : "La date d'expiration dépasse le maximum autorisé.",
     "Hide download" : "Masquer le téléchargement",
     "Video verification" : "Vérification vidéo",
-    "An error occurred while creating the share link. Please check your settings and try again." : "Une erreur s'est produite lors de la création du lien de partage. Veuillez vérifier vos paramètres et réessayer."
+    "An error occurred while creating the share link. Please check your settings and try again." : "Une erreur s'est produite lors de la création du lien de partage. Veuillez vérifier vos paramètres et réessayer.",
+    "Add to calendar" : "Ajouter au calendrier",
+    "(No title)" : "(Sans titre)",
+    "Start" : "Début",
+    "End" : "Fin",
+    "Location" : "Lieu",
+    "Organizer" : "Organisateur",
+    "Status" : "Statut",
+    "Attendees" : "Participants",
+    "Select a calendar" : "Sélectionner un calendrier",
+    "Confirmed" : "Confirmé",
+    "Tentative" : "Provisoire",
+    "Cancelled" : "Annulé",
+    "No response" : "Sans réponse",
+    "Accepted" : "Accepté",
+    "Declined" : "Refusé"
 },
 "nplurals=2; plural=(n > 1);");
