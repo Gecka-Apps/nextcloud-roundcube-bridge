@@ -19,7 +19,7 @@ Provides a communication bridge between RoundCube (embedded via mail_roundcube a
 
 See [NextBridge](https://github.com/Gecka-Apps/NextBridge) for the RoundCube plugin.
     ]]></description>
-    <version>1.2.1</version>
+    <version>1.2.2</version>
     <licence>agpl</licence>
     <author mail="laurent@gecka.nc">Laurent Dinclaux</author>
     <namespace>MailRoundcubeBridge</namespace>

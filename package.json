@@ -1,6 +1,6 @@
 {
   "name": "mail_roundcube_bridge",
-  "version": "1.2.0",
+  "version": "1.2.2",
   "description": "Nextcloud integration bridge for RoundCube",
   "author": "Laurent Dinclaux <laurent@gecka.nc>",
   "license": "AGPL-3.0-or-later",
