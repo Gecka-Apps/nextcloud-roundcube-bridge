@@ -1,7 +1,7 @@
 OC.L10N.register(
     "mail_roundcube_bridge",
     {
-    "Nextcloud Bridge" : "Pont Nextcloud",
+    "Nextbridge Roundcube Connector" : "Nextbridge Roundcube Connector",
     "Enable Nextcloud bridge" : "Activer le pont Nextcloud",
     "Integration with Nextcloud services (files, calendar)." : "Intégration avec les services Nextcloud (fichiers, agenda).",
     "Available features:" : "Fonctionnalités disponibles :",

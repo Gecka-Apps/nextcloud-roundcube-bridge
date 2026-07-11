@@ -1,5 +1,5 @@
 /**
- * RoundCube Bridge - Admin settings
+ * Nextbridge Roundcube Connector - Admin settings
  *
  * @author Laurent Dinclaux <laurent@gecka.nc>
  * @copyright 2026 Gecka

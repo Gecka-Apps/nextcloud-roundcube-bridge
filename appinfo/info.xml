@@ -2,7 +2,7 @@
 <info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
     <id>mail_roundcube_bridge</id>
-    <name>RoundCube Bridge</name>
+    <name>Nextbridge Roundcube Connector</name>
     <summary>Nextcloud integration bridge for RoundCube</summary>
     <description><![CDATA[
 Provides a communication bridge between RoundCube (embedded via mail_roundcube app) and Nextcloud services.

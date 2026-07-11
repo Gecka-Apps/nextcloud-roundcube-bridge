@@ -1,5 +1,5 @@
 /**
- * RoundCube Bridge - Main entry point
+ * Nextbridge Roundcube Connector - Main entry point
  *
  * Mounts the Vue bridge container and injects the NextcloudBridge client
  * into the RoundCube iframe for file/calendar integration.

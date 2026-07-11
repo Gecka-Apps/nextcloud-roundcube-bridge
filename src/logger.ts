@@ -8,7 +8,7 @@
  * @license AGPL-3.0-or-later
  */
 
-const PREFIX = '[RoundCube Bridge]'
+const PREFIX = '[Nextbridge Roundcube Connector]'
 const IS_DEV = process.env.NODE_ENV !== 'production'
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function

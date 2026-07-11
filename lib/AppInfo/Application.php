@@ -18,7 +18,7 @@ use OCP\IAppConfig;
 use OCP\Util;
 
 /**
- * Main application class for the RoundCube Bridge app.
+ * Main application class for the Nextbridge Roundcube Connector app.
  *
  * Provides integration between RoundCube (embedded via mail_roundcube)
  * and Nextcloud services (files, calendar).

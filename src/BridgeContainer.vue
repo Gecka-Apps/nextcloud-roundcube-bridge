@@ -76,14 +76,14 @@ export default defineComponent({
     function setupIframeDetection() {
       iframeRef.value = findRoundcubeIframe()
       if (iframeRef.value) {
-        console.log('[RoundCube Bridge] Found iframe immediately')
+        console.log('[Nextbridge Roundcube Connector] Found iframe immediately')
         return
       }
 
       const observer = new MutationObserver(() => {
         const iframe = findRoundcubeIframe()
         if (iframe && !iframeRef.value) {
-          console.log('[RoundCube Bridge] Found iframe via MutationObserver')
+          console.log('[Nextbridge Roundcube Connector] Found iframe via MutationObserver')
           iframeRef.value = iframe
         }
       })
@@ -94,7 +94,7 @@ export default defineComponent({
         if (!iframeRef.value) {
           iframeRef.value = findRoundcubeIframe()
           if (iframeRef.value) {
-            console.log('[RoundCube Bridge] Found iframe after 1s delay')
+            console.log('[Nextbridge Roundcube Connector] Found iframe after 1s delay')
           }
         }
       }, 1000)
@@ -103,7 +103,7 @@ export default defineComponent({
         if (!iframeRef.value) {
           iframeRef.value = findRoundcubeIframe()
           if (iframeRef.value) {
-            console.log('[RoundCube Bridge] Found iframe after 3s delay')
+            console.log('[Nextbridge Roundcube Connector] Found iframe after 3s delay')
           }
         }
       }, 3000)

@@ -8,7 +8,7 @@
 <template>
   <div class="mail-roundcube-bridge-admin">
     <NcSettingsSection
-      :name="t('mail_roundcube_bridge', 'Nextcloud Bridge')"
+      :name="t('mail_roundcube_bridge', 'Nextbridge Roundcube Connector')"
       :description="t('mail_roundcube_bridge', 'Integration with Nextcloud services (files, calendar).')"
     >
       <NcCheckboxRadioSwitch

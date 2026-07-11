@@ -18,7 +18,7 @@ use OCP\Settings\ISettings;
 use OCP\Util;
 
 /**
- * Admin settings page for the RoundCube Bridge app.
+ * Admin settings page for the Nextbridge Roundcube Connector app.
  */
 class Admin implements ISettings
 {

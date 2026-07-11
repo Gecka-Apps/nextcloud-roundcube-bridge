@@ -1,4 +1,4 @@
-# RoundCube Bridge
+# Nextbridge Roundcube Connector
 
 [![GitHub release](https://img.shields.io/github/v/release/Gecka-Apps/nextcloud-roundcube-bridge)](https://github.com/Gecka-Apps/nextcloud-roundcube-bridge/releases)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
@@ -74,7 +74,7 @@ NextcloudBridge.base64ToBlob(base64, mimeType)
 ### From App Store
 
 1. Go to Nextcloud Apps or visit the [App Store page](https://apps.nextcloud.com/apps/mail_roundcube_bridge)
-2. Search for "RoundCube Bridge"
+2. Search for "Nextbridge Roundcube Connector"
 3. Click Install
 
 ### Manual Installation
