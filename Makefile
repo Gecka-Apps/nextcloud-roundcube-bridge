@@ -166,6 +166,7 @@ APPSTORE_FILES =\
  img\
  templates\
  lib\
+ l10n\
  LICENSE
 
 # .htaccess is blacklisted by the app-store installer, so we have to remove it
