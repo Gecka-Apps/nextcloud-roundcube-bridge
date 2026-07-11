@@ -16,7 +16,7 @@ A Nextcloud app that provides a communication bridge between RoundCube (embedded
 
 ## Requirements
 
-- Nextcloud 32–33
+- Nextcloud 32–34
 - PHP 8.2+
 - [mail_roundcube](https://github.com/rotdrop/nextcloud-roundcube) app installed and configured
 - [NextBridge](https://github.com/Gecka-Apps/NextBridge) plugin installed in RoundCube
