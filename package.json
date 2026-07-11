@@ -24,6 +24,7 @@
     "@nextcloud/babel-config": "^1.2.0",
     "@nextcloud/browserslist-config": "^3.0.0",
     "@nextcloud/webpack-vue-config": "~6.2.0",
+    "terser-webpack-plugin": "^5.3.10",
     "ts-loader": "^9.0.0",
     "typescript": "^5.0.0"
   },
