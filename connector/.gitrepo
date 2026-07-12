@@ -6,6 +6,7 @@
 [subrepo]
 	remote = git@github.com:Gecka-Apps/nextbridge-connector.git
 	branch = main
-	commit = 
+	commit = 0c025a5f5a60fea35e36cef29a5ea2932d06a495
 	method = merge
 	cmdver = 0.4.9
+	parent = ff260e439cb06550419aeba3fbcaa7f7ba8b3a9e
