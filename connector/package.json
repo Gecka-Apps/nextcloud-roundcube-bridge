@@ -1,0 +1,18 @@
+{
+  "name": "@gecka/nextbridge-connector",
+  "version": "0.1.0",
+  "description": "Reusable building blocks for Nextcloud connector apps — Files, Share, Calendar, Talk.",
+  "author": "Laurent Dinclaux <laurent@gecka.nc>",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix"
+  },
+  "devDependencies": {
+    "@nextcloud/eslint-config": "^9.0.1",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "eslint": "^10.7.0",
+    "eslint-plugin-vue": "^10.9.2"
+  }
+}
