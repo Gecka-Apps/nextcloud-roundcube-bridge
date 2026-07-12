@@ -8,7 +8,7 @@ const spaceIndent = stylistic.configs.customize({ indent: 2 }).rules
 
 export default [
   {
-    ignores: ['js/', 'node_modules/', 'vendor/', 'l10n/'],
+    ignores: ['js/', 'node_modules/', 'vendor/', 'l10n/', 'connector/'],
   },
   ...recommendedJavascript,
   {

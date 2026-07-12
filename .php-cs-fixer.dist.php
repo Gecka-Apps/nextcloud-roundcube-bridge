@@ -14,6 +14,7 @@ $config
     ->ignoreVCSIgnored(true)
     ->notPath('build')
     ->notPath('l10n')
+    ->exclude('connector')
     ->in(__DIR__);
 
 return $config;

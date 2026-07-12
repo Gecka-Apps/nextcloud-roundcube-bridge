@@ -46,6 +46,30 @@ class Application extends App implements IBootstrap {
      * @return void
      */
     public function register(IRegistrationContext $context): void {
+        $this->registerConnectorAutoloader();
+    }
+
+    /**
+     * Register the PSR-4 autoloader for the shared connector library.
+     *
+     * The library is vendored under connector/lib/ (git-subrepo). Nextcloud only
+     * auto-maps the app's own OCA namespace, so the shared Gecka namespace is
+     * registered here.
+     *
+     * @return void
+     */
+    private function registerConnectorAutoloader(): void {
+        spl_autoload_register(static function (string $class): void {
+            $prefix = 'Gecka\\Nextcloud\\Nextbridge\\Connector\\';
+            if (!str_starts_with($class, $prefix)) {
+                return;
+            }
+            $file = __DIR__ . '/../../connector/lib/'
+                . str_replace('\\', '/', substr($class, strlen($prefix))) . '.php';
+            if (is_file($file)) {
+                require $file;
+            }
+        });
     }
 
     /**
