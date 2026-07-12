@@ -12,30 +12,29 @@
     <!-- Share options form (shown after file selection) -->
     <ShareOptionsForm
       v-if="isShareOptionsOpen && pendingShareWithOptionsRequest"
-      :file-path="pendingShareWithOptionsRequest.path"
-      :file-name="pendingShareWithOptionsRequest.filename"
-      :server-error="shareServerError"
-      :server-error-detail="shareServerErrorDetail"
+      :filePath="pendingShareWithOptionsRequest.path"
+      :fileName="pendingShareWithOptionsRequest.filename"
+      :serverError="shareServerError"
+      :serverErrorDetail="shareServerErrorDetail"
       @submit="onShareOptionsSubmit"
-      @cancel="onShareOptionsCancel"
-    />
+      @cancel="onShareOptionsCancel" />
     <!-- Calendar picker with event preview (shown for calendar attachments) -->
     <CalendarPickerForm
       v-if="isCalendarPickerOpen && calendarEvent"
       :event="calendarEvent"
       :calendars="calendarList"
-      :server-error="calendarError"
+      :serverError="calendarError"
       @submit="onCalendarSubmit"
-      @cancel="onCalendarCancel"
-    />
+      @cancel="onCalendarCancel" />
   </div>
 </template>
 
 <script>
-import ShareOptionsForm from './components/ShareOptionsForm.vue'
+import { defineComponent, onMounted, ref } from 'vue'
 import CalendarPickerForm from './components/CalendarPickerForm.vue'
+import ShareOptionsForm from './components/ShareOptionsForm.vue'
 import { useIframeBridge } from './composables/useIframeBridge'
-import { ref, onMounted, defineComponent } from 'vue'
+import logger from './logger'
 
 export default defineComponent({
   name: 'BridgeContainer',
@@ -43,31 +42,40 @@ export default defineComponent({
     ShareOptionsForm,
     CalendarPickerForm,
   },
+
   setup() {
     // Reference to the RoundCube iframe
     const iframeRef = ref(null)
 
     // Find the RoundCube iframe by ID or name
+    /**
+     *
+     */
     function findRoundcubeIframe() {
       let iframe = document.getElementById('mail_roundcube-frame')
-      if (iframe) return iframe
+      if (iframe) {
+        return iframe
+      }
 
       iframe = document.querySelector('iframe[name="mail_roundcube"]')
       return iframe
     }
 
     // Setup iframe detection
+    /**
+     *
+     */
     function setupIframeDetection() {
       iframeRef.value = findRoundcubeIframe()
       if (iframeRef.value) {
-        console.log('[Nextbridge Roundcube Connector] Found iframe immediately')
+        logger.debug('Found iframe immediately')
         return
       }
 
       const observer = new MutationObserver(() => {
         const iframe = findRoundcubeIframe()
         if (iframe && !iframeRef.value) {
-          console.log('[Nextbridge Roundcube Connector] Found iframe via MutationObserver')
+          logger.debug('Found iframe via MutationObserver')
           iframeRef.value = iframe
         }
       })
@@ -78,7 +86,7 @@ export default defineComponent({
         if (!iframeRef.value) {
           iframeRef.value = findRoundcubeIframe()
           if (iframeRef.value) {
-            console.log('[Nextbridge Roundcube Connector] Found iframe after 1s delay')
+            logger.debug('Found iframe after 1s delay')
           }
         }
       }, 1000)
@@ -87,7 +95,7 @@ export default defineComponent({
         if (!iframeRef.value) {
           iframeRef.value = findRoundcubeIframe()
           if (iframeRef.value) {
-            console.log('[Nextbridge Roundcube Connector] Found iframe after 3s delay')
+            logger.debug('Found iframe after 3s delay')
           }
         }
       }, 3000)

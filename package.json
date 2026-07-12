@@ -7,7 +7,9 @@
   "scripts": {
     "build": "webpack --mode production",
     "dev": "webpack --mode development",
-    "watch": "webpack --mode development --watch"
+    "watch": "webpack --mode development --watch",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix"
   },
   "dependencies": {
     "@nextcloud/auth": "^2.1.0",
@@ -25,8 +27,10 @@
     "@babel/preset-env": "^7.29.7",
     "@nextcloud/babel-config": "^1.2.0",
     "@nextcloud/browserslist-config": "^3.0.0",
+    "@nextcloud/eslint-config": "^9.0.1",
     "@nextcloud/webpack-vue-config": "^7.0.2",
     "@vue/tsconfig": "^0.9.1",
+    "eslint": "^10.7.0",
     "terser-webpack-plugin": "^5.6.1",
     "ts-loader": "^9.0.0",
     "typescript": "^5.0.0"

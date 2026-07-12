@@ -68,8 +68,7 @@
           type="button"
           class="calendar-picker__cal-row"
           :class="{ 'calendar-picker__cal-row--selected': selectedCalendar === cal.url }"
-          @click="selectedCalendar = cal.url"
-        >
+          @click="selectedCalendar = cal.url">
           <span class="calendar-picker__cal-dot" :style="{ backgroundColor: cal.color }" />
           {{ cal.displayname }}
         </button>
@@ -82,10 +81,10 @@
 
       <!-- Actions -->
       <div class="calendar-picker__actions">
-        <NcButton type="tertiary" :disabled="submitting" @click="$emit('cancel')">
+        <NcButton variant="tertiary" :disabled="submitting" @click="$emit('cancel')">
           {{ t('mail_roundcube_bridge', 'Cancel') }}
         </NcButton>
-        <NcButton type="primary" :disabled="!selectedCalendar || submitting" @click="onSubmit">
+        <NcButton variant="primary" :disabled="!selectedCalendar || submitting" @click="onSubmit">
           <template v-if="submitting" #icon>
             <NcLoadingIcon :size="20" />
           </template>
@@ -97,9 +96,9 @@
 </template>
 
 <script>
-import { translate as t, getCanonicalLocale } from '@nextcloud/l10n'
-import { defineComponent, ref, computed, watch } from 'vue'
+import { getCanonicalLocale, translate as t } from '@nextcloud/l10n'
 import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
+import { computed, defineComponent, ref, watch } from 'vue'
 
 export default defineComponent({
   name: 'CalendarPickerForm',
@@ -107,20 +106,24 @@ export default defineComponent({
     NcButton,
     NcLoadingIcon,
   },
+
   props: {
     event: {
       type: Object,
       required: true,
     },
+
     calendars: {
       type: Array,
       required: true,
     },
+
     serverError: {
       type: String,
       default: '',
     },
   },
+
   emits: ['submit', 'cancel'],
   setup(props, { emit }) {
     const selectedCalendar = ref(props.calendars[0]?.url || '')
@@ -135,6 +138,8 @@ export default defineComponent({
 
     /**
      * Format an ICS date object (ISO string + all-day flag) in the user's locale.
+     *
+     * @param {object} value - The parsed ICS date ({ date, allDay }), or null.
      */
     function formatDate(value) {
       if (!value || !value.date) {
@@ -156,6 +161,8 @@ export default defineComponent({
 
     /**
      * Format a calendar user as "Name <email>" or just the email.
+     *
+     * @param {object} user - The organizer or attendee ({ name, email }).
      */
     function formatUser(user) {
       if (!user) {
@@ -183,6 +190,8 @@ export default defineComponent({
 
     /**
      * Translate an attendee participation status.
+     *
+     * @param {string} status - The attendee participation status (e.g. ACCEPTED).
      */
     function partstatLabel(status) {
       if (!status) {
@@ -197,6 +206,9 @@ export default defineComponent({
       return map[status.toUpperCase()] || status
     }
 
+    /**
+     *
+     */
     function onSubmit() {
       if (!selectedCalendar.value) {
         return

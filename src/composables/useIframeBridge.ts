@@ -11,13 +11,14 @@
  * @license AGPL-3.0-or-later
  */
 
-import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import { generateRemoteUrl, generateUrl } from '@nextcloud/router'
+import type { Node } from '@nextcloud/files'
+
 import { getCurrentUser, getRequestToken } from '@nextcloud/auth'
+import axios from '@nextcloud/axios'
 import { getFilePickerBuilder } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
-import axios from '@nextcloud/axios'
-import type { Node } from '@nextcloud/files'
+import { generateRemoteUrl, generateUrl } from '@nextcloud/router'
+import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import logger from '../logger'
 
 // Message types for iframe communication
@@ -161,13 +162,14 @@ interface PendingShareLinkRequest {
  * Composable to bridge file operations between Nextcloud and an iframe.
  *
  * @param iframeRef - Ref to the iframe element
+ * @param iframeRef.value - The current iframe element, or null until it mounts
  * @param options - Options object
  * @param options.allowedOrigin - Origin to accept messages from (optional, defaults to same origin)
  * @param options.enabled - Whether the bridge is enabled (optional, defaults to true)
  */
 export function useIframeBridge(
   iframeRef: { value: HTMLIFrameElement | null },
-  options?: { allowedOrigin?: string; enabled?: boolean }
+  options?: { allowedOrigin?: string, enabled?: boolean },
 ) {
   const isProcessing = ref(false)
   const enabled = options?.enabled ?? true
@@ -195,13 +197,15 @@ export function useIframeBridge(
 
   // Calendar picker state
   const isCalendarPickerOpen = ref(false)
-  const pendingCalendarRequest = ref<{ requestId: string; icsContent: string } | null>(null)
+  const pendingCalendarRequest = ref<{ requestId: string, icsContent: string } | null>(null)
   const calendarEvent = ref<ParsedEvent | null>(null)
   const calendarList = ref<CalendarInfo[]>([])
   const calendarError = ref('')
 
   /**
    * Get the WebDAV base URL for the current user.
+   *
+   * @param path - Path within the user's files, relative to the WebDAV root
    */
   const getWebDavUrl = (path: string = ''): string => {
     if (!currentUser?.uid) {
@@ -215,8 +219,10 @@ export function useIframeBridge(
 
   /**
    * Download a file from Nextcloud via WebDAV.
+   *
+   * @param path - Path of the file to download, relative to the user's files root
    */
-  const downloadFile = async (path: string): Promise<{ content: ArrayBuffer; mimeType: string }> => {
+  const downloadFile = async (path: string): Promise<{ content: ArrayBuffer, mimeType: string }> => {
     const url = getWebDavUrl(path)
     logger.debug('Downloading file from WebDAV', { url, path })
 
@@ -237,6 +243,8 @@ export function useIframeBridge(
 
   /**
    * Check if a file exists via WebDAV.
+   *
+   * @param path - Path to check, relative to the user's files root
    */
   const fileExists = async (path: string): Promise<boolean> => {
     const url = getWebDavUrl(path)
@@ -254,6 +262,9 @@ export function useIframeBridge(
   /**
    * Find a unique filename by adding (2), (3), etc. if the file already exists.
    * Mimics the behavior of Nextcloud Mail app.
+   *
+   * @param folderPath - Folder the file will be written into
+   * @param filename - Desired file name before deduplication
    */
   const findUniqueFilename = async (folderPath: string, filename: string): Promise<string> => {
     // Split filename into name and extension
@@ -287,6 +298,10 @@ export function useIframeBridge(
 
   /**
    * Upload a file to Nextcloud via WebDAV.
+   *
+   * @param path - Destination path, relative to the user's files root
+   * @param content - File contents to upload
+   * @param mimeType - MIME type to store the file as
    */
   const uploadFile = async (path: string, content: ArrayBuffer, mimeType?: string): Promise<void> => {
     const url = getWebDavUrl(path)
@@ -297,7 +312,7 @@ export function useIframeBridge(
       'Content-Type': mimeType || 'application/octet-stream',
     }
     if (requestToken) {
-      headers['requesttoken'] = requestToken
+      headers.requesttoken = requestToken
     }
 
     const response = await fetch(url, {
@@ -314,6 +329,8 @@ export function useIframeBridge(
 
   /**
    * Get the CalDAV base URL for the current user's calendars.
+   *
+   * @param path - Calendar path appended to the user's CalDAV root
    */
   const getCalDavUrl = (path: string = ''): string => {
     if (!currentUser?.uid) {
@@ -377,10 +394,14 @@ export function useIframeBridge(
 
       // Check if it's a calendar (has calendar resource type)
       const resourceTypes = resp.getElementsByTagNameNS('DAV:', 'resourcetype')[0]
-      if (!resourceTypes) continue
+      if (!resourceTypes) {
+        continue
+      }
 
       const isCalendar = resourceTypes.getElementsByTagNameNS('urn:ietf:params:xml:ns:caldav', 'calendar').length > 0
-      if (!isCalendar) continue
+      if (!isCalendar) {
+        continue
+      }
 
       // Check if calendar supports VEVENT
       const supportedComponents = resp.getElementsByTagNameNS('urn:ietf:params:xml:ns:caldav', 'supported-calendar-component-set')[0]
@@ -394,11 +415,15 @@ export function useIframeBridge(
           }
         }
       }
-      if (!supportsVevent) continue
+      if (!supportsVevent) {
+        continue
+      }
 
       // Check if calendar is enabled
       const enabledEl = resp.getElementsByTagNameNS('http://owncloud.org/ns', 'calendar-enabled')[0]
-      if (enabledEl && enabledEl.textContent === '0') continue
+      if (enabledEl && enabledEl.textContent === '0') {
+        continue
+      }
 
       // Skip read-only calendars (e.g. the generated contact birthdays calendar,
       // calendars shared without write access): the user must be able to write.
@@ -406,11 +431,15 @@ export function useIframeBridge(
       const canWrite = privilegeSet !== undefined
         && (privilegeSet.getElementsByTagNameNS('DAV:', 'write').length > 0
           || privilegeSet.getElementsByTagNameNS('DAV:', 'write-content').length > 0)
-      if (!canWrite) continue
+      if (!canWrite) {
+        continue
+      }
 
       // Get calendar URL
       const hrefEl = resp.getElementsByTagNameNS('DAV:', 'href')[0]
-      if (!hrefEl) continue
+      if (!hrefEl) {
+        continue
+      }
       const href = hrefEl.textContent || ''
 
       // Get display name
@@ -434,9 +463,10 @@ export function useIframeBridge(
   /**
    * Add an event to a calendar via the bridge API.
    * The API handles orphaned UIDs from soft-deleted events.
+   *
    * @param calendarUrl - The calendar URL (e.g., /remote.php/dav/calendars/user/personal/)
    * @param icsContent - The ICS content of the event
-   * @returns Object with updated: true if event was updated, false if created
+   * @return Object with updated: true if event was updated, false if created
    */
   const addEventToCalendar = async (calendarUrl: string, icsContent: string): Promise<{ updated: boolean }> => {
     logger.debug('Adding event to calendar via API', { calendarUrl })
@@ -445,8 +475,8 @@ export function useIframeBridge(
       generateUrl('/apps/mail_roundcube_bridge/api/calendar/event'),
       {
         calendarUri: calendarUrl,
-        icsContent: icsContent,
-      }
+        icsContent,
+      },
     )
 
     if (!response.data.success) {
@@ -461,18 +491,21 @@ export function useIframeBridge(
    * Parse ICS content into a structured event for preview.
    * Parsing happens server-side so the preview reflects the exact bytes
    * Nextcloud would import.
+   *
    * @param icsContent - The ICS content of the event
    */
   const parseEvent = async (icsContent: string): Promise<ParsedEvent> => {
     const response = await axios.post(
       generateUrl('/apps/mail_roundcube_bridge/api/calendar/parse'),
-      { icsContent }
+      { icsContent },
     )
     return response.data
   }
 
   /**
    * Convert ArrayBuffer to base64 string.
+   *
+   * @param buffer - Binary data to encode
    */
   const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
     const bytes = new Uint8Array(buffer)
@@ -485,6 +518,8 @@ export function useIframeBridge(
 
   /**
    * Convert base64 string to ArrayBuffer.
+   *
+   * @param base64 - Base64 string to decode
    */
   const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
     const binary = atob(base64)
@@ -497,6 +532,8 @@ export function useIframeBridge(
 
   /**
    * Send a message to the iframe.
+   *
+   * @param message - Response to post back into the iframe
    */
   const sendToIframe = (message: FilePickedResponse | FileSavedResponse | ShareLinkCreatedResponse | CalendarPickedResponse): void => {
     const iframe = iframeRef.value
@@ -510,32 +547,9 @@ export function useIframeBridge(
   }
 
   /**
-   * Handle file pick request from iframe - opens the picker.
-   */
-  const handlePickFile = (message: PickFileMessage): void => {
-    logger.info('Handling pickFile request', { message })
-    isProcessing.value = true
-    pendingPickRequest.value = {
-      requestId: message.requestId,
-      multiple: message.multiple ?? true,
-      mimeTypes: message.mimeTypes,
-    }
-
-    const builder = getFilePickerBuilder(t('mail_roundcube_bridge', 'Choose a file to add as attachment'))
-      .setMultiSelect(message.multiple ?? true)
-      .addButton({
-        label: t('mail_roundcube_bridge', 'Choose'),
-        type: 'primary',
-        callback: (nodes) => onFilesPicked(nodes as Node[]),
-      })
-    if (message.mimeTypes?.length) {
-      builder.setMimeTypeFilter(message.mimeTypes)
-    }
-    builder.build().pick().catch(() => onFilePickerClose())
-  }
-
-  /**
    * Callback when files are picked from the FilePicker component.
+   *
+   * @param nodes - Files selected in the picker
    */
   const onFilesPicked = async (nodes: Node[]): Promise<void> => {
     const request = pendingPickRequest.value
@@ -609,55 +623,36 @@ export function useIframeBridge(
   }
 
   /**
-   * Handle file save request from iframe - opens the folder picker.
+   * Handle file pick request from iframe - opens the picker.
+   *
+   * @param message - The pickFile request from the iframe
    */
-  const handleSaveFile = (message: SaveFileMessage): void => {
-    logger.info('Handling saveFile request', { filename: message.filename })
+  const handlePickFile = (message: PickFileMessage): void => {
+    logger.info('Handling pickFile request', { message })
     isProcessing.value = true
-    pendingSaveRequest.value = {
+    pendingPickRequest.value = {
       requestId: message.requestId,
-      filename: message.filename,
-      content: message.content,
-      mimeType: message.mimeType,
+      multiple: message.multiple ?? true,
+      mimeTypes: message.mimeTypes,
     }
-    pendingSaveFilesRequest.value = null
-    openFolderPicker()
-  }
 
-  /**
-   * Handle multiple files save request from iframe - opens the folder picker once.
-   */
-  const handleSaveFiles = (message: SaveFilesMessage): void => {
-    logger.info('Handling saveFiles request', { count: message.files.length })
-    isProcessing.value = true
-    pendingSaveFilesRequest.value = {
-      requestId: message.requestId,
-      files: message.files,
-    }
-    pendingSaveRequest.value = null
-    openFolderPicker()
-  }
-
-  /**
-   * Open the Nextcloud folder picker for saving attachments.
-   */
-  const openFolderPicker = (): void => {
-    getFilePickerBuilder(t('mail_roundcube_bridge', 'Choose a folder to store the attachment in'))
-      .setMultiSelect(false)
-      .setMimeTypeFilter(['httpd/unix-directory'])
-      .allowDirectories(true)
+    const builder = getFilePickerBuilder(t('mail_roundcube_bridge', 'Choose a file to add as attachment'))
+      .setMultiSelect(message.multiple ?? true)
       .addButton({
         label: t('mail_roundcube_bridge', 'Choose'),
         type: 'primary',
-        callback: (nodes) => onFolderSelected(nodes as Node[]),
+        callback: (nodes) => onFilesPicked(nodes as Node[]),
       })
-      .build()
-      .pick()
-      .catch(() => onFileSaverClose())
+    if (message.mimeTypes?.length) {
+      builder.setMimeTypeFilter(message.mimeTypes)
+    }
+    builder.build().pick().catch(() => onFilePickerClose())
   }
 
   /**
    * Callback when a folder is selected for saving.
+   *
+   * @param nodes - Folder selected in the picker (the first entry is used)
    */
   const onFolderSelected = async (nodes: Node[]): Promise<void> => {
     const singleRequest = pendingSaveRequest.value
@@ -766,29 +761,62 @@ export function useIframeBridge(
   }
 
   /**
-   * Handle create share link request from iframe - opens file picker.
+   * Open the Nextcloud folder picker for saving attachments.
    */
-  const handleCreateShareLink = (message: CreateShareLinkMessage): void => {
-    logger.info('Handling createShareLink request')
-    isProcessing.value = true
-    pendingShareLinkRequest.value = {
-      requestId: message.requestId,
-    }
-    getFilePickerBuilder(t('mail_roundcube_bridge', 'Choose a file to share as a link'))
+  const openFolderPicker = (): void => {
+    getFilePickerBuilder(t('mail_roundcube_bridge', 'Choose a folder to store the attachment in'))
       .setMultiSelect(false)
+      .setMimeTypeFilter(['httpd/unix-directory'])
+      .allowDirectories(true)
       .addButton({
-        label: t('mail_roundcube_bridge', 'Share'),
+        label: t('mail_roundcube_bridge', 'Choose'),
         type: 'primary',
-        callback: (nodes) => onShareLinkFilePicked(nodes as Node[]),
+        callback: (nodes) => onFolderSelected(nodes as Node[]),
       })
       .build()
       .pick()
-      .catch(() => onShareLinkPickerClose())
+      .catch(() => onFileSaverClose())
+  }
+
+  /**
+   * Handle file save request from iframe - opens the folder picker.
+   *
+   * @param message - The saveFile request from the iframe
+   */
+  const handleSaveFile = (message: SaveFileMessage): void => {
+    logger.info('Handling saveFile request', { filename: message.filename })
+    isProcessing.value = true
+    pendingSaveRequest.value = {
+      requestId: message.requestId,
+      filename: message.filename,
+      content: message.content,
+      mimeType: message.mimeType,
+    }
+    pendingSaveFilesRequest.value = null
+    openFolderPicker()
+  }
+
+  /**
+   * Handle multiple files save request from iframe - opens the folder picker once.
+   *
+   * @param message - The saveFiles request from the iframe
+   */
+  const handleSaveFiles = (message: SaveFilesMessage): void => {
+    logger.info('Handling saveFiles request', { count: message.files.length })
+    isProcessing.value = true
+    pendingSaveFilesRequest.value = {
+      requestId: message.requestId,
+      files: message.files,
+    }
+    pendingSaveRequest.value = null
+    openFolderPicker()
   }
 
   /**
    * Callback when a file is picked for share link creation.
    * Opens the share options form instead of creating the share immediately.
+   *
+   * @param nodes - File selected to share (the first entry is used)
    */
   const onShareLinkFilePicked = async (nodes: Node[]): Promise<void> => {
     const request = pendingShareLinkRequest.value
@@ -851,8 +879,41 @@ export function useIframeBridge(
   }
 
   /**
+   * Handle create share link request from iframe - opens file picker.
+   *
+   * @param message - The createShareLink request from the iframe
+   */
+  const handleCreateShareLink = (message: CreateShareLinkMessage): void => {
+    logger.info('Handling createShareLink request')
+    isProcessing.value = true
+    pendingShareLinkRequest.value = {
+      requestId: message.requestId,
+    }
+    getFilePickerBuilder(t('mail_roundcube_bridge', 'Choose a file to share as a link'))
+      .setMultiSelect(false)
+      .addButton({
+        label: t('mail_roundcube_bridge', 'Share'),
+        type: 'primary',
+        callback: (nodes) => onShareLinkFilePicked(nodes as Node[]),
+      })
+      .build()
+      .pick()
+      .catch(() => onShareLinkPickerClose())
+  }
+
+  /**
    * Callback when share options form is submitted.
    * Creates the share link via the bridge API with all options.
+   *
+   * @param options - Share settings entered in the form
+   * @param options.path - Path of the file to share
+   * @param options.password - Optional password protecting the link
+   * @param options.expireDate - Optional expiration date (YYYY-MM-DD)
+   * @param options.label - Optional label for the share
+   * @param options.note - Optional note shown to the recipient
+   * @param options.hideDownload - Whether to hide the download button
+   * @param options.permissions - Permissions bitfield for the share
+   * @param options.sendPasswordByTalk - Whether to send the password over Talk
    */
   const onShareOptionsSubmit = async (options: {
     path: string
@@ -872,13 +933,27 @@ export function useIframeBridge(
 
     try {
       const payload: Record<string, unknown> = { path: options.path }
-      if (options.password) payload.password = options.password
-      if (options.expireDate) payload.expireDate = options.expireDate
-      if (options.label) payload.label = options.label
-      if (options.note) payload.note = options.note
-      if (options.hideDownload) payload.hideDownload = true
-      if (options.permissions && options.permissions !== 1) payload.permissions = options.permissions
-      if (options.sendPasswordByTalk) payload.sendPasswordByTalk = true
+      if (options.password) {
+        payload.password = options.password
+      }
+      if (options.expireDate) {
+        payload.expireDate = options.expireDate
+      }
+      if (options.label) {
+        payload.label = options.label
+      }
+      if (options.note) {
+        payload.note = options.note
+      }
+      if (options.hideDownload) {
+        payload.hideDownload = true
+      }
+      if (options.permissions && options.permissions !== 1) {
+        payload.permissions = options.permissions
+      }
+      if (options.sendPasswordByTalk) {
+        payload.sendPasswordByTalk = true
+      }
 
       const response = await axios.post(
         generateUrl('/apps/mail_roundcube_bridge/api/share'),
@@ -893,10 +968,18 @@ export function useIframeBridge(
         url: responseData.url,
         filename: request.filename,
       }
-      if (responseData.password) shareResponse.password = responseData.password
-      if (responseData.expireDate) shareResponse.expireDate = responseData.expireDate
-      if (responseData.label) shareResponse.label = responseData.label
-      if (responseData.note) shareResponse.note = responseData.note
+      if (responseData.password) {
+        shareResponse.password = responseData.password
+      }
+      if (responseData.expireDate) {
+        shareResponse.expireDate = responseData.expireDate
+      }
+      if (responseData.label) {
+        shareResponse.label = responseData.label
+      }
+      if (responseData.note) {
+        shareResponse.note = responseData.note
+      }
       sendToIframe(shareResponse)
 
       pendingShareWithOptionsRequest.value = null
@@ -904,7 +987,7 @@ export function useIframeBridge(
       isProcessing.value = false
     } catch (error: unknown) {
       logger.error('Failed to create share link', { error })
-      const axiosError = error as { response?: { data?: { error?: string; detail?: string } } }
+      const axiosError = error as { response?: { data?: { error?: string, detail?: string } } }
       shareServerError.value = axiosError.response?.data?.error || 'Failed to create share link'
       shareServerErrorDetail.value = axiosError.response?.data?.detail || ''
     }
@@ -932,6 +1015,8 @@ export function useIframeBridge(
    * Handle pick calendar request from iframe.
    * Parses the event and loads the calendars, then opens the picker so the
    * user confirms against a Nextcloud-rendered preview.
+   *
+   * @param message - The pickCalendar request from the iframe
    */
   const handlePickCalendar = async (message: PickCalendarMessage): Promise<void> => {
     logger.info('Handling pickCalendar request')
@@ -978,6 +1063,8 @@ export function useIframeBridge(
 
   /**
    * Callback when the user confirms a calendar in the picker.
+   *
+   * @param calendarUrl - URL of the calendar chosen by the user
    */
   const onCalendarSubmit = async (calendarUrl: string): Promise<void> => {
     const request = pendingCalendarRequest.value
@@ -1023,6 +1110,8 @@ export function useIframeBridge(
 
   /**
    * Handle incoming postMessage from iframe.
+   *
+   * @param event - The postMessage event received from the iframe
    */
   const handleMessage = (event: MessageEvent): void => {
     const expectedOrigin = allowedOrigin || window.location.origin

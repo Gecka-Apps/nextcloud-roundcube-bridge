@@ -8,11 +8,15 @@
  * @license AGPL-3.0-or-later
  */
 
+/* eslint-disable no-console -- this module is the single boundary to the console */
+
 const PREFIX = '[Nextbridge Roundcube Connector]'
 const IS_DEV = process.env.NODE_ENV !== 'production'
 
-// eslint-disable-next-line @typescript-eslint/no-empty-function
-const noop = () => {}
+/**
+ * No-op used in place of debug/info logging in production builds.
+ */
+function noop() {}
 
 const logger = {
   debug: IS_DEV ? (...args: unknown[]) => console.debug(PREFIX, ...args) : noop,

@@ -28,7 +28,7 @@
           {{ t('mail_roundcube_bridge', 'Public link sharing is not available for your account.') }}
         </p>
         <div class="share-options-form__actions">
-          <NcButton type="primary" @click="$emit('cancel')">
+          <NcButton variant="primary" @click="$emit('cancel')">
             {{ t('mail_roundcube_bridge', 'Close') }}
           </NcButton>
         </div>
@@ -40,8 +40,7 @@
           <NcTextField
             v-model="label"
             :label="t('mail_roundcube_bridge', 'Label')"
-            :placeholder="t('mail_roundcube_bridge', 'e.g. recipient email')"
-          />
+            :placeholder="t('mail_roundcube_bridge', 'e.g. recipient email')" />
         </div>
 
         <!-- Password toggle + field -->
@@ -49,8 +48,7 @@
           <NcCheckboxRadioSwitch
             v-model="passwordEnabled"
             :disabled="passwordEnforced"
-            type="switch"
-          >
+            type="switch">
             {{ t('mail_roundcube_bridge', 'Protect with password') }}
             <span v-if="passwordEnforced" class="share-options-form__enforced">
               ({{ t('mail_roundcube_bridge', 'required') }})
@@ -59,9 +57,8 @@
           <div v-if="passwordEnabled" class="share-options-form__password-row">
             <NcPasswordField
               v-model="password"
-              :label="t('mail_roundcube_bridge', 'Password')"
-            />
-            <NcButton type="secondary" @click="generatePassword">
+              :label="t('mail_roundcube_bridge', 'Password')" />
+            <NcButton variant="secondary" @click="generatePassword">
               {{ t('mail_roundcube_bridge', 'Generate') }}
             </NcButton>
           </div>
@@ -72,8 +69,7 @@
           <NcCheckboxRadioSwitch
             v-model="expiryEnabled"
             :disabled="expiryEnforced"
-            type="switch"
-          >
+            type="switch">
             {{ expiryEnforced
               ? t('mail_roundcube_bridge', 'Expiration date (enforced)')
               : t('mail_roundcube_bridge', 'Set expiration date')
@@ -89,8 +85,7 @@
               type="date"
               :min="minDate"
               :max="maxDate"
-              class="share-options-form__date-input"
-            >
+              class="share-options-form__date-input">
             <p v-if="expiryError" class="share-options-form__error">
               {{ expiryError }}
             </p>
@@ -99,9 +94,9 @@
 
         <!-- Advanced settings toggle -->
         <div class="share-options-form__advanced-toggle">
-          <NcButton type="tertiary" @click="advancedOpen = !advancedOpen">
+          <NcButton variant="tertiary" @click="advancedOpen = !advancedOpen">
             {{ t('mail_roundcube_bridge', 'Advanced settings') }}
-            <span :class="['share-options-form__caret', { 'share-options-form__caret--open': advancedOpen }]" />
+            <span class="share-options-form__caret" :class="[{ 'share-options-form__caret--open': advancedOpen }]" />
           </NcButton>
         </div>
 
@@ -124,8 +119,7 @@
               v-model="note"
               :label="t('mail_roundcube_bridge', 'Note to recipient')"
               :placeholder="t('mail_roundcube_bridge', 'Enter a note for the share recipient')"
-              class="share-options-form__note"
-            />
+              class="share-options-form__note" />
           </div>
 
           <!-- Video verification (Talk required + password must be enabled) -->
@@ -141,7 +135,7 @@
               {{ t('mail_roundcube_bridge', 'Custom permissions') }}
             </NcCheckboxRadioSwitch>
             <div v-if="customPermissions" class="share-options-form__permissions">
-              <NcCheckboxRadioSwitch :model-value="true" :disabled="true" type="switch">
+              <NcCheckboxRadioSwitch :modelValue="true" :disabled="true" type="switch">
                 {{ t('mail_roundcube_bridge', 'Read') }}
               </NcCheckboxRadioSwitch>
               <NcCheckboxRadioSwitch v-model="permRead" type="switch">
@@ -167,10 +161,10 @@
 
         <!-- Actions -->
         <div class="share-options-form__actions">
-          <NcButton type="tertiary" @click="$emit('cancel')">
+          <NcButton variant="tertiary" @click="$emit('cancel')">
             {{ t('mail_roundcube_bridge', 'Cancel') }}
           </NcButton>
-          <NcButton type="primary" @click="onSubmit">
+          <NcButton variant="primary" @click="onSubmit">
             {{ t('mail_roundcube_bridge', 'Create share link') }}
           </NcButton>
         </div>
@@ -180,18 +174,19 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl, imagePath } from '@nextcloud/router'
-import axios from '@nextcloud/axios'
-import { defineComponent, ref, computed, onMounted } from 'vue'
 import {
   NcButton,
-  NcTextField,
-  NcPasswordField,
   NcCheckboxRadioSwitch,
-  NcTextArea,
   NcLoadingIcon,
+  NcPasswordField,
+  NcTextArea,
+  NcTextField,
 } from '@nextcloud/vue'
+import { computed, defineComponent, onMounted, ref } from 'vue'
+import logger from '../logger'
 
 export default defineComponent({
   name: 'ShareOptionsForm',
@@ -203,28 +198,34 @@ export default defineComponent({
     NcTextArea,
     NcLoadingIcon,
   },
+
   props: {
     filePath: {
       type: String,
       required: true,
     },
+
     fileName: {
       type: String,
       required: true,
     },
+
     fileType: {
       type: String,
       default: 'file',
     },
+
     serverError: {
       type: String,
       default: '',
     },
+
     serverErrorDetail: {
       type: String,
       default: '',
     },
   },
+
   emits: ['submit', 'cancel'],
   setup(props, { emit }) {
     /**
@@ -237,22 +238,55 @@ export default defineComponent({
       const ext = (props.fileName.split('.').pop() || '').toLowerCase()
       const iconMap = {
         pdf: 'application-pdf',
-        jpg: 'image', jpeg: 'image', png: 'image', gif: 'image',
-        svg: 'image', webp: 'image', bmp: 'image', ico: 'image',
-        doc: 'x-office-document', docx: 'x-office-document',
-        odt: 'x-office-document', rtf: 'x-office-document',
-        xls: 'x-office-spreadsheet', xlsx: 'x-office-spreadsheet',
-        ods: 'x-office-spreadsheet', csv: 'x-office-spreadsheet',
-        ppt: 'x-office-presentation', pptx: 'x-office-presentation',
+        jpg: 'image',
+        jpeg: 'image',
+        png: 'image',
+        gif: 'image',
+        svg: 'image',
+        webp: 'image',
+        bmp: 'image',
+        ico: 'image',
+        doc: 'x-office-document',
+        docx: 'x-office-document',
+        odt: 'x-office-document',
+        rtf: 'x-office-document',
+        xls: 'x-office-spreadsheet',
+        xlsx: 'x-office-spreadsheet',
+        ods: 'x-office-spreadsheet',
+        csv: 'x-office-spreadsheet',
+        ppt: 'x-office-presentation',
+        pptx: 'x-office-presentation',
         odp: 'x-office-presentation',
-        mp4: 'video', avi: 'video', mkv: 'video', webm: 'video', mov: 'video',
-        mp3: 'audio', ogg: 'audio', flac: 'audio', wav: 'audio', m4a: 'audio',
-        zip: 'package-x-generic', gz: 'package-x-generic', tar: 'package-x-generic',
-        rar: 'package-x-generic', '7z': 'package-x-generic',
-        txt: 'text', md: 'text', log: 'text',
-        js: 'text-code', ts: 'text-code', py: 'text-code', php: 'text-code',
-        html: 'text-code', css: 'text-code', json: 'text-code', xml: 'text-code',
-        ttf: 'font', otf: 'font', woff: 'font', woff2: 'font',
+        mp4: 'video',
+        avi: 'video',
+        mkv: 'video',
+        webm: 'video',
+        mov: 'video',
+        mp3: 'audio',
+        ogg: 'audio',
+        flac: 'audio',
+        wav: 'audio',
+        m4a: 'audio',
+        zip: 'package-x-generic',
+        gz: 'package-x-generic',
+        tar: 'package-x-generic',
+        rar: 'package-x-generic',
+        '7z': 'package-x-generic',
+        txt: 'text',
+        md: 'text',
+        log: 'text',
+        js: 'text-code',
+        ts: 'text-code',
+        py: 'text-code',
+        php: 'text-code',
+        html: 'text-code',
+        css: 'text-code',
+        json: 'text-code',
+        xml: 'text-code',
+        ttf: 'font',
+        otf: 'font',
+        woff: 'font',
+        woff2: 'font',
         ics: 'text-calendar',
         vcf: 'text-vcard',
       }
@@ -288,6 +322,8 @@ export default defineComponent({
 
     /**
      * Format a Date as YYYY-MM-DD in local timezone.
+     *
+     * @param {Date} date - The date to format.
      */
     function toLocalDateString(date) {
       const y = date.getFullYear()
@@ -319,9 +355,7 @@ export default defineComponent({
      */
     onMounted(async () => {
       try {
-        const response = await axios.get(
-          generateUrl('/apps/mail_roundcube_bridge/api/share-config'),
-        )
+        const response = await axios.get(generateUrl('/apps/mail_roundcube_bridge/api/share-config'))
         const config = response.data
 
         // Check if sharing is allowed for this user
@@ -359,7 +393,7 @@ export default defineComponent({
           maxDate.value = toLocalDateString(defaultExpiry)
         }
       } catch (error) {
-        console.error('[RC-Bridge] Failed to load share config, using defaults', error)
+        logger.error('Failed to load share config, using defaults', error)
         // Sensible defaults when API fails
         expiryEnabled.value = true
         const defaultExpiry = new Date()
@@ -370,6 +404,9 @@ export default defineComponent({
       configLoaded.value = true
     })
 
+    /**
+     *
+     */
     function onSubmit() {
       expiryError.value = ''
 
@@ -388,8 +425,14 @@ export default defineComponent({
       // Build permissions bitfield
       let permissions = 1 // PERMISSION_READ always included
       if (customPermissions.value) {
-        if (permRead.value) permissions |= 2 // PERMISSION_UPDATE
-        if (permDelete.value) permissions |= 8 // PERMISSION_DELETE
+        // PERMISSION_UPDATE
+        if (permRead.value) {
+          permissions |= 2
+        }
+        // PERMISSION_DELETE
+        if (permDelete.value) {
+          permissions |= 8
+        }
       }
 
       emit('submit', {

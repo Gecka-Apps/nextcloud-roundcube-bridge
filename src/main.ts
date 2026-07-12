@@ -25,6 +25,8 @@ logger.info('Initializing...')
 /**
  * Inject the Nextcloud bridge client into the iframe.
  * This enables file/calendar integration via postMessage.
+ *
+ * @param iframe - The RoundCube iframe to inject the bridge client into.
  */
 function injectBridgeClient(iframe: HTMLIFrameElement): void {
   try {
@@ -173,12 +175,24 @@ function injectBridgeClient(iframe: HTMLIFrameElement): void {
 // Iframe Detection
 // ============================================================================
 
+/**
+ * Check whether an iframe is the embedded RoundCube frame.
+ *
+ * @param iframe - The iframe element to test.
+ */
 function isRoundcubeIframe(iframe: HTMLIFrameElement): boolean {
-  if (iframe.id === 'mail_roundcube-frame') return true
-  if (iframe.name === 'mail_roundcube') return true
+  if (iframe.id === 'mail_roundcube-frame') {
+    return true
+  }
+  if (iframe.name === 'mail_roundcube') {
+    return true
+  }
   return false
 }
 
+/**
+ *
+ */
 function findAndSetupIframe(): HTMLIFrameElement | null {
   // Try by ID first, then by name
   let iframe = document.getElementById('mail_roundcube-frame') as HTMLIFrameElement | null
@@ -200,7 +214,7 @@ function findAndSetupIframe(): HTMLIFrameElement | null {
         logger.debug('Waiting for iframe load')
         iframe.addEventListener('load', doInject)
       }
-    } catch (e) {
+    } catch {
       // Cross-origin - try anyway
       logger.debug('Cross-origin, trying to inject anyway')
       doInject()
@@ -212,6 +226,9 @@ function findAndSetupIframe(): HTMLIFrameElement | null {
   return null
 }
 
+/**
+ *
+ */
 function watchForIframe(): void {
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {

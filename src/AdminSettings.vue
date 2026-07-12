@@ -9,13 +9,11 @@
   <div class="mail-roundcube-bridge-admin">
     <NcSettingsSection
       :name="t('mail_roundcube_bridge', 'Nextbridge Roundcube Connector')"
-      :description="t('mail_roundcube_bridge', 'Integration with Nextcloud services (files, calendar).')"
-    >
+      :description="t('mail_roundcube_bridge', 'Integration with Nextcloud services (files, calendar).')">
       <NcCheckboxRadioSwitch
-        :model-value="enabled"
+        :modelValue="enabled"
         :loading="loading"
-        @update:model-value="setEnabled"
-      >
+        @update:modelValue="setEnabled">
         {{ t('mail_roundcube_bridge', 'Enable Nextcloud bridge') }}
       </NcCheckboxRadioSwitch>
       <p class="hint">
@@ -37,11 +35,12 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { loadState } from '@nextcloud/initial-state'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { loadState } from '@nextcloud/initial-state'
-import axios from '@nextcloud/axios'
-import { NcSettingsSection, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { NcCheckboxRadioSwitch, NcSettingsSection } from '@nextcloud/vue'
+import logger from './logger'
 
 export default {
   name: 'AdminSettings',
@@ -49,12 +48,14 @@ export default {
     NcSettingsSection,
     NcCheckboxRadioSwitch,
   },
+
   data() {
     return {
       enabled: false,
       loading: false,
     }
   },
+
   mounted() {
     try {
       const state = loadState('mail_roundcube_bridge', 'admin')
@@ -63,6 +64,7 @@ export default {
       // State not available
     }
   },
+
   methods: {
     t,
     async setEnabled(value) {
@@ -73,7 +75,7 @@ export default {
         })
         this.enabled = value
       } catch (error) {
-        console.error('Failed to save setting', error)
+        logger.error('Failed to save setting', error)
       } finally {
         this.loading = false
       }
