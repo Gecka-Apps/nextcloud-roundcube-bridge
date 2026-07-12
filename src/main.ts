@@ -191,7 +191,8 @@ function isRoundcubeIframe(iframe: HTMLIFrameElement): boolean {
 }
 
 /**
- *
+ * Locate the RoundCube iframe, inject the bridge client into its current
+ * document, and keep re-injecting on every navigation.
  */
 function findAndSetupIframe(): HTMLIFrameElement | null {
   // Try by ID first, then by name
@@ -200,30 +201,36 @@ function findAndSetupIframe(): HTMLIFrameElement | null {
     iframe = document.querySelector('iframe[name="mail_roundcube"]') as HTMLIFrameElement | null
   }
 
-  if (iframe) {
-    logger.debug('Found RoundCube iframe:', iframe.id || iframe.name || iframe.src?.substring(0, 50))
-
-    // Setup load handler for injection
-    const doInject = () => injectBridgeClient(iframe!)
-
-    try {
-      if (iframe.contentDocument?.readyState === 'complete') {
-        logger.debug('Iframe already loaded, injecting now')
-        doInject()
-      } else {
-        logger.debug('Waiting for iframe load')
-        iframe.addEventListener('load', doInject)
-      }
-    } catch {
-      // Cross-origin - try anyway
-      logger.debug('Cross-origin, trying to inject anyway')
-      doInject()
-    }
-
-    return iframe
+  if (!iframe) {
+    return null
   }
 
-  return null
+  logger.debug('Found RoundCube iframe:', iframe.id || iframe.name || iframe.src?.substring(0, 50))
+
+  // Attach a persistent load handler once. RoundCube navigates this same iframe
+  // (e.g. mail list -> compose), which replaces its document and drops the
+  // injected client, so it must be re-injected on every load.
+  const marked = iframe as HTMLIFrameElement & { nextbridgeSetup?: boolean }
+  if (!marked.nextbridgeSetup) {
+    marked.nextbridgeSetup = true
+    iframe.addEventListener('load', () => {
+      logger.debug('Iframe loaded, injecting bridge client')
+      injectBridgeClient(iframe)
+    })
+  }
+
+  // Inject now if the current document is already loaded.
+  try {
+    if (iframe.contentDocument?.readyState === 'complete') {
+      injectBridgeClient(iframe)
+    }
+  } catch {
+    // Cross-origin - try anyway
+    logger.debug('Cross-origin, trying to inject anyway')
+    injectBridgeClient(iframe)
+  }
+
+  return iframe
 }
 
 /**
